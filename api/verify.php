@@ -108,7 +108,11 @@ function validate_telegram_init_data($rawData, string $botToken): array
 
     // Telegram mini app verification requires calculating the secret key by
     // hashing the bot token with the constant "WebAppData" as the HMAC key.
-    $secretKey = hash_hmac('sha256', $botToken, 'WebAppData', true);
+    // The previous implementation accidentally reversed the arguments of
+    // hash_hmac, which meant the bot token was used as the key and produced an
+    // incorrect secret key – causing every verification attempt to fail with
+    // "User verification failed".
+    $secretKey = hash_hmac('sha256', $APIKEY, 'WebAppData', true);
     $calculatedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
     if (!hash_equals($calculatedHash, $receivedHash)) {
