@@ -2,6 +2,13 @@
 require_once 'config.php';
 $setting = select("setting", "*", null, null,"select");
 $textbotlang = languagechange(__DIR__.'/text.json');
+if (!function_exists('getPaySettingValue')) {
+    function getPaySettingValue($name)
+    {
+        $result = select("PaySetting", "ValuePay", "NamePay", $name, "select");
+        return $result['ValuePay'] ?? null;
+    }
+}
 //-----------------------------[  text panel  ]-------------------------------
 $stmt = $pdo->prepare("SHOW TABLES LIKE 'textbot'");
 $stmt->execute();
@@ -267,23 +274,23 @@ $setting_panel =  json_encode([
     ],
     'resize_keyboard' => true
 ]);
-$PaySettingcard = select("PaySetting", "ValuePay", "NamePay", "Cartstatus","select")['ValuePay'];
-$PaySettingnow = select("PaySetting", "ValuePay", "NamePay", "nowpaymentstatus","select")['ValuePay'];
-$PaySettingaqayepardakht = select("PaySetting", "ValuePay", "NamePay", "statusaqayepardakht","select")['ValuePay'];
-$PaySettingpv = select("PaySetting", "ValuePay", "NamePay", "Cartstatuspv","select")['ValuePay'];
-$usernamecart = select("PaySetting", "ValuePay", "NamePay", "CartDirect","select")['ValuePay'];
-$Swapino = select("PaySetting", "ValuePay", "NamePay", "statusSwapWallet","select")['ValuePay'];
-$trnadoo = select("PaySetting", "ValuePay", "NamePay", "statustarnado","select")['ValuePay'];
-$paymentverify = select("PaySetting","ValuePay","NamePay","checkpaycartfirst","select")['ValuePay'];
+$PaySettingcard = getPaySettingValue("Cartstatus");
+$PaySettingnow = getPaySettingValue("nowpaymentstatus");
+$PaySettingaqayepardakht = getPaySettingValue("statusaqayepardakht");
+$PaySettingpv = getPaySettingValue("Cartstatuspv");
+$usernamecart = getPaySettingValue("CartDirect");
+$Swapino = getPaySettingValue("statusSwapWallet");
+$trnadoo = getPaySettingValue("statustarnado");
+$paymentverify = getPaySettingValue("checkpaycartfirst");
 $stmt = $pdo->prepare("SELECT * FROM Payment_report WHERE id_user = '$from_id' AND payment_Status = 'paid' ");
 $stmt->execute();
 $paymentexits = $stmt->rowCount();
-$zarinpal = select("PaySetting","ValuePay","NamePay","zarinpalstatus","select")['ValuePay'];
-$affilnecurrency = select("PaySetting","ValuePay","NamePay","digistatus","select")['ValuePay'];
-$arzireyali3= select("PaySetting","ValuePay","NamePay","statusiranpay3","select")['ValuePay'];
-$paymentstatussnotverify = select("PaySetting","ValuePay","NamePay","paymentstatussnotverify","select")['ValuePay'];
-$paymentsstartelegram = select("PaySetting","ValuePay","NamePay","statusstar","select")['ValuePay'];
-$payment_status_nowpayment = select("PaySetting","ValuePay","NamePay","statusnowpayment","select")['ValuePay'];
+$zarinpal = getPaySettingValue("zarinpalstatus");
+$affilnecurrency = getPaySettingValue("digistatus");
+$arzireyali3 = getPaySettingValue("statusiranpay3");
+$paymentstatussnotverify = getPaySettingValue("paymentstatussnotverify");
+$paymentsstartelegram = getPaySettingValue("statusstar");
+$payment_status_nowpayment = getPaySettingValue("statusnowpayment");
 $step_payment = [
     'inline_keyboard' => []
     ];
