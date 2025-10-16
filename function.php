@@ -166,12 +166,14 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
                 if (!is_array($results)) {
                     $results = [];
                 }
-                if (isset($adminnumber) && $adminnumber !== '') {
-                    $results[] = (string) $adminnumber;
-                }
+
                 $results = array_values(array_unique(array_filter($results, function ($value) {
                     return $value !== null && $value !== '';
                 })));
+
+                if (empty($results) && isset($adminnumber) && $adminnumber !== '') {
+                    $results[] = (string) $adminnumber;
+                }
             }
             return $results;
         } elseif ($type == "fetchAll") {
