@@ -12,6 +12,103 @@ use Endroid\QrCode\Label\LabelAlignment;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
 
+#-----------shell helper utilities------------#
+function isShellExecAvailable()
+{
+    if (!function_exists('shell_exec')) {
+        return false;
+    }
+
+    $disabledFunctions = ini_get('disable_functions');
+    if (!empty($disabledFunctions) && stripos($disabledFunctions, 'shell_exec') !== false) {
+        return false;
+    }
+
+    return true;
+}
+
+function runShellCommand($command)
+{
+    if (!isShellExecAvailable()) {
+        error_log('shell_exec is not available; unable to run command: ' . $command);
+        return null;
+    }
+
+    return shell_exec($command);
+}
+
+function deleteDirectory($directory)
+{
+    if (!file_exists($directory)) {
+        return true;
+    }
+
+    if (!is_dir($directory)) {
+        return @unlink($directory);
+    }
+
+    $items = scandir($directory);
+    if ($items === false) {
+        return false;
+    }
+
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $path = $directory . DIRECTORY_SEPARATOR . $item;
+        if (is_dir($path)) {
+            if (!deleteDirectory($path)) {
+                return false;
+            }
+        } else {
+            if (!@unlink($path)) {
+                return false;
+            }
+        }
+    }
+
+    return @rmdir($directory);
+}
+
+function copyDirectoryContents($source, $destination)
+{
+    if (!is_dir($source)) {
+        return false;
+    }
+
+    if (!is_dir($destination) && !mkdir($destination, 0777, true) && !is_dir($destination)) {
+        return false;
+    }
+
+    $items = scandir($source);
+    if ($items === false) {
+        return false;
+    }
+
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $sourcePath = $source . DIRECTORY_SEPARATOR . $item;
+        $destinationPath = $destination . DIRECTORY_SEPARATOR . $item;
+
+        if (is_dir($sourcePath)) {
+            if (!copyDirectoryContents($sourcePath, $destinationPath)) {
+                return false;
+            }
+        } else {
+            if (!@copy($sourcePath, $destinationPath)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 #-----------function------------#
 function step($step, $from_id)
 {
@@ -1147,19 +1244,12 @@ function checktelegramip()
 }
 function addCronIfNotExists($cronCommand)
 {
-    // Ensure shell_exec is available before attempting to manage cron jobs.
-    if (!function_exists('shell_exec')) {
+    if (!isShellExecAvailable()) {
         error_log('shell_exec is not available; unable to register cron job: ' . $cronCommand);
         return false;
     }
 
-    $disabledFunctions = ini_get('disable_functions');
-    if (!empty($disabledFunctions) && stripos($disabledFunctions, 'shell_exec') !== false) {
-        error_log('shell_exec is disabled in php.ini; unable to register cron job: ' . $cronCommand);
-        return false;
-    }
-
-    $existingCronJobs = shell_exec('crontab -l 2>/dev/null');
+    $existingCronJobs = runShellCommand('crontab -l 2>/dev/null');
     if ($existingCronJobs === null) {
         $existingCronJobs = '';
     }
@@ -1183,7 +1273,7 @@ function addCronIfNotExists($cronCommand)
     }
 
     file_put_contents($temporaryFile, $cronContent);
-    shell_exec('crontab ' . escapeshellarg($temporaryFile));
+    runShellCommand('crontab ' . escapeshellarg($temporaryFile));
     unlink($temporaryFile);
 
     return true;

@@ -3,22 +3,73 @@ require_once '../config.php';
 require_once '../function.php';
 require_once '../botapi.php';
 
+function addPathToZip(ZipArchive $zip, $path, $basePath)
+{
+    $normalizedBase = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+    if (is_dir($path)) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($files as $file) {
+            $filePath = (string) $file;
+            $relativePath = ltrim(str_replace($normalizedBase, '', $filePath), DIRECTORY_SEPARATOR);
+
+            if ($file->isDir()) {
+                $zip->addEmptyDir($relativePath);
+            } elseif ($file->isFile()) {
+                $zip->addFile($filePath, $relativePath);
+            }
+        }
+    } elseif (is_file($path)) {
+        $relativePath = ltrim(str_replace($normalizedBase, '', $path), DIRECTORY_SEPARATOR);
+        $zip->addFile($path, $relativePath);
+    }
+}
+
 $reportbackup = select("topicid","idreport","report","backupfile","select")['idreport'];
 $destination = getcwd();
 $setting = select("setting", "*");
 $sourcefir = dirname($destination);
 $botlist = select("botsaz","*",null,null,"fetchAll");
-if($botlist){
-    foreach ($botlist as $bot){
-        $folderName = $bot['id_user'].$bot['username'];
-        shell_exec("zip -r $destination/file.zip $sourcefir/vpnbot/$folderName/data $sourcefir/vpnbot/$folderName/product.json $sourcefir/vpnbot/$folderName/product_name.json");
-        telegram('sendDocument',[
-            'chat_id' => $setting['Channel_Report'],
-            'message_thread_id' => $reportbackup,
-            'document' => new CURLFile('file.zip'),
-            'caption' => "@{$bot['username']} | {$bot['id_user']}",
+if ($botlist) {
+    foreach ($botlist as $bot) {
+        $folderName = $bot['id_user'] . $bot['username'];
+        $botBasePath = $sourcefir . '/vpnbot/' . $folderName;
+        $zipFilePath = $destination . '/file_' . $folderName . '.zip';
+        $zip = new ZipArchive();
+
+        if ($zip->open($zipFilePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
+            $pathsToBackup = [
+                $botBasePath . '/data',
+                $botBasePath . '/product.json',
+                $botBasePath . '/product_name.json',
+            ];
+
+            foreach ($pathsToBackup as $path) {
+                if (file_exists($path)) {
+                    addPathToZip($zip, $path, $botBasePath . '/');
+                } else {
+                    error_log('Backup path not found for bot archive: ' . $path);
+                }
+            }
+            $zip->close();
+
+            telegram('sendDocument', [
+                'chat_id' => $setting['Channel_Report'],
+                'message_thread_id' => $reportbackup,
+                'document' => new CURLFile($zipFilePath),
+                'caption' => "@{$bot['username']} | {$bot['id_user']}",
             ]);
-        unlink('file.zip');
+
+            if (file_exists($zipFilePath)) {
+                unlink($zipFilePath);
+            }
+        } else {
+            error_log('Unable to create zip archive for bot directory: ' . $botBasePath);
+        }
     }
 }
 

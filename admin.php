@@ -2465,18 +2465,26 @@ $caption";
         update("setting", "statuscopycart", $valuenew);
     } elseif ($type == "score") {
         if ($value == "1") {
-            $currentCronJobs = shell_exec("crontab -l");
-            $jobToRemove = "*/1 * * * * curl https://$domainhosts/cronbot/lottery.php";
-            $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', $currentCronJobs);
-            file_put_contents('/tmp/crontab.txt', $newCronJobs);
-            shell_exec('crontab /tmp/crontab.txt');
-            unlink('/tmp/crontab.txt');
+            if (isShellExecAvailable()) {
+                $currentCronJobs = runShellCommand('crontab -l 2>/dev/null');
+                $jobToRemove = "*/1 * * * * curl https://$domainhosts/cronbot/lottery.php";
+                $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', (string) $currentCronJobs);
+                $tempCronFile = '/tmp/crontab.txt';
+                file_put_contents($tempCronFile, trim($newCronJobs) . PHP_EOL);
+                runShellCommand('crontab ' . escapeshellarg($tempCronFile));
+                if (file_exists($tempCronFile)) {
+                    unlink($tempCronFile);
+                }
+            } else {
+                error_log('Unable to remove lottery cron job because shell_exec is unavailable.');
+            }
             $valuenew = "0";
         } else {
-            $existingCronCommands = shell_exec('crontab -l');
             $phpFilePath = "https://$domainhosts/cronbot/lottery.php";
             $cronCommand = "*/1 * * * * curl $phpFilePath";
-            addCronIfNotExists($cronCommand);
+            if (!addCronIfNotExists($cronCommand)) {
+                error_log('Unable to register lottery cron job because shell_exec is unavailable.');
+            }
             $valuenew = "1";
         }
         update("setting", "scorestatus", $valuenew);
@@ -10185,12 +10193,12 @@ if (isset($update["inline_query"])) {
     ));
     $destination = getcwd();
     $dirsource = "$destination/vpnbot/{$userdate['id_user']}{$userdate['username']}";
-    if (is_dir($dirsource)) {
-        shell_exec("rm -rf $dirsource");
+    if (is_dir($dirsource) && !deleteDirectory($dirsource)) {
+        error_log('Failed to remove existing bot directory: ' . $dirsource);
     }
-    mkdir($dirsource);
-    $command = "cp -r $destination/vpnbot/Default/* $dirsource 2>&1";
-    shell_exec($command);
+    if (!copyDirectoryContents($destination . '/vpnbot/Default', $dirsource)) {
+        error_log('Failed to copy default bot files into: ' . $dirsource);
+    }
     $contentconfig = file_get_contents($dirsource . "/config.php");
     $new_code = str_replace('BotTokenNew', $userdate['token'], $contentconfig);
     file_put_contents($dirsource . "/config.php", $new_code);
@@ -10226,7 +10234,9 @@ if (isset($update["inline_query"])) {
     $contentbto = select("botsaz", "*", "id_user", $id_user, "select");
     $destination = getcwd();
     $dirsource = "$destination/vpnbot/$id_user{$contentbto['username']}";
-    shell_exec("rm -rf $dirsource");
+    if (is_dir($dirsource) && !deleteDirectory($dirsource)) {
+        error_log('Failed to remove bot directory: ' . $dirsource);
+    }
     file_get_contents("https://api.telegram.org/bot{$contentbto['bot_toekn']}/deletewebhook");
     $stmt = $pdo->prepare("DELETE FROM botsaz WHERE id_user = :id_user");
     $stmt->bindParam(':id_user', $id_user, PDO::PARAM_STR);
