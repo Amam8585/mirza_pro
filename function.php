@@ -67,12 +67,23 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
         } elseif ($type == "fetchAll") {
             return $stmt->fetchAll();
         } else {
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result === false ? null : $result;
         }
     } catch (PDOException $e) {
         error_log($e->getMessage());
         die("Query failed: " . $e->getMessage());
     }
+}
+
+function getPaySettingValue($name, $default = null)
+{
+    $result = select("PaySetting", "ValuePay", "NamePay", $name, "select");
+    if (!is_array($result) || !array_key_exists('ValuePay', $result)) {
+        return $default;
+    }
+
+    return $result['ValuePay'];
 }
 function generateUUID()
 {
@@ -86,9 +97,69 @@ function generateUUID()
 }
 function tronratee()
 {
-    $file = file_get_contents('https://api.com/b.php', true);
-    $file = json_decode($file, true);
-    return $file;
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 5,
+        ],
+    ]);
+
+    $response = @file_get_contents('https://api.com/b.php', false, $context);
+
+    if ($response === false) {
+        error_log('Failed to connect to api.com');
+        return ['ok' => false, 'result' => []];
+    }
+
+    $data = json_decode($response, true);
+    if (!is_array($data)) {
+        error_log('Invalid response received from api.com');
+        return ['ok' => false, 'result' => []];
+    }
+
+    if (!isset($data['result']) || !is_array($data['result'])) {
+        error_log('Missing result field in api.com response');
+        return ['ok' => false, 'result' => []];
+    }
+
+    return ['ok' => true, 'result' => $data['result']];
+}
+
+function requireTronRates(array $keys = [])
+{
+    $rates = tronratee();
+    if (empty($rates['ok'])) {
+        return null;
+    }
+
+    $result = $rates['result'];
+    foreach ($keys as $key) {
+        if (!isset($result[$key]) || (is_numeric($result[$key]) && (float)$result[$key] == 0.0)) {
+            return null;
+        }
+    }
+
+    return $result;
+}
+
+function updatePaymentMessageId($response, $orderId)
+{
+    if (!is_array($response)) {
+        error_log("Failed to send payment message for order {$orderId}: unexpected response");
+        return false;
+    }
+
+    if (empty($response['ok'])) {
+        error_log("Failed to send payment message for order {$orderId}: " . json_encode($response));
+        return false;
+    }
+
+    if (!isset($response['result']['message_id'])) {
+        error_log("Missing message_id for order {$orderId}: " . json_encode($response));
+        return false;
+    }
+
+    update("Payment_report", "message_id", intval($response['result']['message_id']), "id_order", $orderId);
+    return true;
 }
 function nowPayments($payment, $price_amount, $order_id, $order_description)
 {

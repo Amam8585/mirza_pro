@@ -22,10 +22,6 @@ function telegram($method, $datas = [],$token = null)
         return $res;
     }
 }
-error_log(json_encode(telegram('verifyUser',[
-    'user_id' => 1789174391,
-    'custom_description' => "تایید شده توسط fbi"
-])));
 function sendmessage($chat_id,$text,$keyboard,$parse_mode,$bot_token = null){
     if(intval($chat_id) == 0)return ['ok' => false];
     return telegram('sendmessage',[

@@ -95,64 +95,79 @@ $replacements = [
 ];
 $admin_idss = select("admin", "*", "id_admin", $from_id,"count");
 $temp_addtional_key = [];
-if($setting['inlinebtnmain'] == "oninline"){
-    $trace_keyboard = json_decode($setting['keyboardmain'],true)['keyboard'];
-    foreach ($trace_keyboard as $key => $callback_set){
-  foreach ($callback_set as $keyboard_key =>$keyboard){
-      if($keyboard['text'] == "text_sell"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "buy";
-      }
-      if($keyboard['text'] == "accountwallet"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "account";
-      }
-      if($keyboard['text'] == "accountwallet"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "account";
-      }
-      if($keyboard['text'] == "text_Tariff_list"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "Tariff_list";
-      }
-      if($keyboard['text'] == "text_wheel_luck"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "wheel_luck";
-      }
-      if($keyboard['text'] == "text_affiliates"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "affiliatesbtn";
-      }
-      if($keyboard['text'] == "text_extend"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "extendbtn";
-      }
-      if($keyboard['text'] == "text_support"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "supportbtns";
-      }
-      if($keyboard['text'] == "text_Purchased_services"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "backorder";
-      }
-      if($keyboard['text'] == "text_help"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "helpbtns";
-      }
-      if($keyboard['text'] == "text_usertest"){
-          $trace_keyboard[$key][$keyboard_key]['callback_data'] = "usertestbtn";
-      }
-  }
+$keyboardLayout = json_decode($setting['keyboardmain'], true);
+$keyboardRows = [];
+if (is_array($keyboardLayout) && isset($keyboardLayout['keyboard']) && is_array($keyboardLayout['keyboard'])) {
+    $keyboardRows = $keyboardLayout['keyboard'];
 }
-    if ($admin_idss != 0)$temp_addtional_key[] = ['text' => $textbotlang['Admin']['textpaneladmin'], 'callback_data' => "admin"];
-    if($users['agent'] != "f")$temp_addtional_key[] = ['text' => $datatextbot['textpanelagent'], 'callback_data' => "agentpanel"];
-    if($users['agent'] == "f" and $setting['statusagentrequest'] == "onrequestagent")$temp_addtional_key[] = ['text' => $datatextbot['textrequestagent'], 'callback_data' => "requestagent"];
+
+if ($setting['inlinebtnmain'] == "oninline" && !empty($keyboardRows)) {
+    $trace_keyboard = $keyboardRows;
+    foreach ($trace_keyboard as $key => $callback_set) {
+        foreach ($callback_set as $keyboard_key => $keyboard) {
+            if ($keyboard['text'] == "text_sell") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "buy";
+            }
+            if ($keyboard['text'] == "accountwallet") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "account";
+            }
+            if ($keyboard['text'] == "text_Tariff_list") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "Tariff_list";
+            }
+            if ($keyboard['text'] == "text_wheel_luck") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "wheel_luck";
+            }
+            if ($keyboard['text'] == "text_affiliates") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "affiliatesbtn";
+            }
+            if ($keyboard['text'] == "text_extend") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "extendbtn";
+            }
+            if ($keyboard['text'] == "text_support") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "supportbtns";
+            }
+            if ($keyboard['text'] == "text_Purchased_services") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "backorder";
+            }
+            if ($keyboard['text'] == "text_help") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "helpbtns";
+            }
+            if ($keyboard['text'] == "text_usertest") {
+                $trace_keyboard[$key][$keyboard_key]['callback_data'] = "usertestbtn";
+            }
+        }
+    }
+    if ($admin_idss != 0) {
+        $temp_addtional_key[] = ['text' => $textbotlang['Admin']['textpaneladmin'], 'callback_data' => "admin"];
+    }
+    if ($users['agent'] != "f") {
+        $temp_addtional_key[] = ['text' => $datatextbot['textpanelagent'], 'callback_data' => "agentpanel"];
+    }
+    if ($users['agent'] == "f" && $setting['statusagentrequest'] == "onrequestagent") {
+        $temp_addtional_key[] = ['text' => $datatextbot['textrequestagent'], 'callback_data' => "requestagent"];
+    }
     $keyboard = ['inline_keyboard' => []];
     $keyboardcustom = $trace_keyboard;
-    $keyboardcustom = json_decode(strtr(strval(json_encode($keyboardcustom)), $replacements),true);
+    $keyboardcustom = json_decode(strtr(strval(json_encode($keyboardcustom)), $replacements), true);
     $keyboardcustom[] = $temp_addtional_key;
     $keyboard['inline_keyboard'] = $keyboardcustom;
-    $keyboard  = json_encode($keyboard);
-}else{
-if ($admin_idss != 0)$temp_addtional_key[] = ['text' => $textbotlang['Admin']['textpaneladmin']];
-if($users['agent'] != "f")$temp_addtional_key[] = ['text' => $datatextbot['textpanelagent']];
-if($users['agent'] == "f" and $setting['statusagentrequest'] == "onrequestagent")$temp_addtional_key[] = ['text' => $datatextbot['textrequestagent']];
-$keyboard = ['keyboard' => [],'resize_keyboard' => true];
-$keyboardcustom = json_decode($setting['keyboardmain'],true)['keyboard'];
-$keyboardcustom = json_decode(strtr(strval(json_encode($keyboardcustom)), $replacements),true);
-$keyboardcustom[] = $temp_addtional_key;
-$keyboard['keyboard'] = $keyboardcustom;
-$keyboard  = json_encode($keyboard);
+    $keyboard = json_encode($keyboard);
+} else {
+    if ($admin_idss != 0) {
+        $temp_addtional_key[] = ['text' => $textbotlang['Admin']['textpaneladmin']];
+    }
+    if ($users['agent'] != "f") {
+        $temp_addtional_key[] = ['text' => $datatextbot['textpanelagent']];
+    }
+    if ($users['agent'] == "f" && $setting['statusagentrequest'] == "onrequestagent") {
+        $temp_addtional_key[] = ['text' => $datatextbot['textrequestagent']];
+    }
+    $keyboard = ['keyboard' => [], 'resize_keyboard' => true];
+    $keyboardcustom = $keyboardRows;
+    $keyboardcustom = json_decode(strtr(strval(json_encode($keyboardcustom)), $replacements), true);
+    $keyboardcustom[] = $temp_addtional_key;
+    $keyboard['keyboard'] = $keyboardcustom;
+    $keyboard = json_encode($keyboard);
 }
 
 $keyboardPanel = json_encode([
