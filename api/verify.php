@@ -42,11 +42,13 @@ function datevalid($data_unsafe)
     sort($dataCheckArray);
     $dataCheckString = implode("\n", $dataCheckArray);
 
-    // Telegram mini app verification requires the bot token to be used as the key
-    // when generating the secret key. The previous implementation swapped the
-    // parameters which resulted in an invalid secret key and all verification
-    // attempts failing with "User verification failed".
-    $secretKey = hash_hmac('sha256', 'WebAppData', $APIKEY, true);
+    // Telegram mini app verification requires calculating the secret key by
+    // hashing the bot token with the constant "WebAppData" as the HMAC key.
+    // The previous implementation accidentally reversed the arguments of
+    // hash_hmac, which meant the bot token was used as the key and produced an
+    // incorrect secret key – causing every verification attempt to fail with
+    // "User verification failed".
+    $secretKey = hash_hmac('sha256', $APIKEY, 'WebAppData', true);
     $calculatedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
     if (!hash_equals($calculatedHash, $receivedHash)) {
