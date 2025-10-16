@@ -49,15 +49,42 @@ function datevalid($data_unsafe)
     }
 }
 
-$data = json_decode(file_get_contents("php://input"),true);
-if(!isset($data)){
+$rawInput = file_get_contents("php://input");
+
+if ($rawInput === false) {
+    echo json_encode(array(
+        'status' => false,
+        'msg' => "Failed to read request body",
+        'obj' => []
+    ));
+    return;
+}
+
+$rawInput = trim($rawInput);
+
+if ($rawInput === '') {
     echo json_encode(array(
         'status' => false,
         'msg' => "data invalid",
         'obj' => []
+    ));
+    return;
+}
+
+// Support both plain initData strings and JSON payloads containing the initData value.
+$decodedJson = json_decode($rawInput, true);
+if (json_last_error() === JSON_ERROR_NONE) {
+    if (isset($decodedJson['initData']) && is_string($decodedJson['initData'])) {
+        $rawInput = $decodedJson['initData'];
+    } else {
+        echo json_encode(array(
+            'status' => false,
+            'msg' => "data invalid",
+            'obj' => []
         ));
         return;
+    }
 }
-$data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
-$datavalid = datevalid($data);
+
+$datavalid = datevalid($rawInput);
 echo $datavalid;
