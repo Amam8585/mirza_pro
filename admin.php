@@ -158,10 +158,13 @@ if (in_array($text, $textadmin) || $datain == "admin") {
     $invoicesum = $stmt2->fetch(PDO::FETCH_ASSOC)['total_price'];
     $sql33 = "SELECT SUM(price_product) AS total_price FROM invoice WHERE status!= 'Unpaid' AND name_product != 'سرویس تست'";
     $sql33 = $pdo->query($sql33);
-    $invoicesumall = number_format($sql33->fetch(PDO::FETCH_ASSOC)['total_price'], 0);
+    $invoiceSumRow = $sql33->fetch(PDO::FETCH_ASSOC);
+    $invoiceTotal = isset($invoiceSumRow['total_price']) ? (float) $invoiceSumRow['total_price'] : 0;
+    $invoicesumall = number_format($invoiceTotal, 0);
     $sql3 = "SELECT SUM(price) AS total_extend FROM service_other WHERE type = 'extend_user'";
     $stmt3 = $pdo->query($sql3);
-    $extendsum = $stmt3->fetch(PDO::FETCH_ASSOC)['total_extend'];
+    $extendSumRow = $stmt3->fetch(PDO::FETCH_ASSOC);
+    $extendsum = isset($extendSumRow['total_extend']) ? (float) $extendSumRow['total_extend'] : 0;
     $count_usertest = select("invoice", "*", "name_product", "سرویس تست", "count");
     $timeacc = jdate('H:i:s', time());
     $stmt2 = $pdo->prepare("SELECT COUNT(DISTINCT id_user) as count FROM `invoice` WHERE Status != 'Unpaid'");
@@ -7586,21 +7589,21 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     $textnode = "✅ نود با موفقیت حذف گردید";
     Editmessagetext($from_id, $message_id, $textnode, $backinfoss);
 } elseif ($text == "💎 مالی" && $adminrulecheck['rule'] == "administrator") {
-    $cartotcart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select")['ValuePay'];
-    $plisio = select("PaySetting", "ValuePay", "NamePay", "nowpaymentstatus", "select")['ValuePay'];
-    $arzireyali1 = select("PaySetting", "ValuePay", "NamePay", "statusSwapWallet", "select")['ValuePay'];
+    $cartotcart = getPaySettingValue('Cartstatus', 'offcard');
+    $plisio = getPaySettingValue('nowpaymentstatus', 'offnowpayment');
+    $arzireyali1 = getPaySettingValue('statusSwapWallet', 'offSwapinoBot');
     if ($arzireyali1 != "onSwapinoBot" && $arzireyali1 != "offSwapinoBot") {
         update("PaySetting", "ValuePay", "onSwapinoBot", "NamePay", "statusSwapWallet");
-        $arzireyali1 = select("PaySetting", "ValuePay", "NamePay", "statusSwapWallet", "select")['ValuePay'];
+        $arzireyali1 = getPaySettingValue('statusSwapWallet', 'offSwapinoBot');
     }
-    $arzireyali2 = select("PaySetting", "ValuePay", "NamePay", "statustarnado", "select")['ValuePay'];
-    $arzireyali3 = select("PaySetting", "ValuePay", "NamePay", "statusiranpay3", "select")['ValuePay'];
-    $aqayepardakht = select("PaySetting", "ValuePay", "NamePay", "statusaqayepardakht", "select")['ValuePay'];
-    $zarinpal = select("PaySetting", "ValuePay", "NamePay", "zarinpalstatus", "select")['ValuePay'];
-    $affilnecurrency = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select")['ValuePay'];
-    $paymentstatussnotverify = select("PaySetting", "ValuePay", "NamePay", "paymentstatussnotverify", "select")['ValuePay'];
-    $paymentsstartelegram = select("PaySetting", "ValuePay", "NamePay", "statusstar", "select")['ValuePay'];
-    $payment_status_nowpayment = select("PaySetting", "ValuePay", "NamePay", "statusnowpayment", "select")['ValuePay'];
+    $arzireyali2 = getPaySettingValue('statustarnado', 'offternado');
+    $arzireyali3 = getPaySettingValue('statusiranpay3', 'offiranpay3');
+    $aqayepardakht = getPaySettingValue('statusaqayepardakht', 'offaqayepardakht');
+    $zarinpal = getPaySettingValue('zarinpalstatus', 'offzarinpal');
+    $affilnecurrency = getPaySettingValue('digistatus', 'offdigistatus');
+    $paymentstatussnotverify = getPaySettingValue('paymentstatussnotverify', 'offpaymentstatus');
+    $paymentsstartelegram = getPaySettingValue('statusstar', '0');
+    $payment_status_nowpayment = getPaySettingValue('statusnowpayment', '0');
     $cartotcartstatus = [
         'oncard' => $textbotlang['Admin']['Status']['statuson'],
         'offcard' => $textbotlang['Admin']['Status']['statusoff']
