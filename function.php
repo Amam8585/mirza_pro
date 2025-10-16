@@ -1076,6 +1076,45 @@ function checktelegramip()
 }
 function addCronIfNotExists($cronCommand)
 {
+    // Ensure shell_exec is available before attempting to manage cron jobs.
+    if (!function_exists('shell_exec')) {
+        error_log('shell_exec is not available; unable to register cron job: ' . $cronCommand);
+        return false;
+    }
+
+    $disabledFunctions = ini_get('disable_functions');
+    if (!empty($disabledFunctions) && stripos($disabledFunctions, 'shell_exec') !== false) {
+        error_log('shell_exec is disabled in php.ini; unable to register cron job: ' . $cronCommand);
+        return false;
+    }
+
+    $existingCronJobs = shell_exec('crontab -l 2>/dev/null');
+    if ($existingCronJobs === null) {
+        $existingCronJobs = '';
+    }
+
+    $cronLines = preg_split('/\r?\n/', trim($existingCronJobs));
+    $cronLines = array_filter(array_map('trim', $cronLines), function ($line) {
+        return $line !== '' && strpos($line, '#') !== 0;
+    });
+
+    if (in_array($cronCommand, $cronLines, true)) {
+        return true;
+    }
+
+    $cronLines[] = $cronCommand;
+    $cronContent = implode(PHP_EOL, $cronLines) . PHP_EOL;
+
+    $temporaryFile = tempnam(sys_get_temp_dir(), 'cron');
+    if ($temporaryFile === false) {
+        error_log('Unable to create temporary file for cron job registration.');
+        return false;
+    }
+
+    file_put_contents($temporaryFile, $cronContent);
+    shell_exec('crontab ' . escapeshellarg($temporaryFile));
+    unlink($temporaryFile);
+
     return true;
 }
 
@@ -1095,7 +1134,7 @@ function activecron()
     addCronIfNotExists("0 */5 * * * curl https://$domainhosts/cronbot/backupbot.php");
     addCronIfNotExists("*/2 * * * * curl https://$domainhosts/cronbot/gift.php");
     addCronIfNotExists("*/30 * * * * curl https://$domainhosts/cronbot/expireagent.php");
-    addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/onc_hold.php");
+    addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/on_hold.php");
     addCronIfNotExists("*/2 * * * * curl https://$domainhosts/cronbot/configtest.php");
     addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/uptime_node.php");
     addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/uptime_panel.php");
