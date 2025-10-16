@@ -16,6 +16,14 @@ if( !isset($_SESSION["user"]) || !$result ){
 }
 
 
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+$scriptDirectory = str_replace('\\', '/', dirname($scriptName));
+$applicationBasePath = str_replace('\\', '/', dirname($scriptDirectory));
+$applicationBasePath = rtrim($applicationBasePath, '/');
+if ($applicationBasePath === '/' || $applicationBasePath === '.' || $applicationBasePath === '\\') {
+    $applicationBasePath = '';
+}
+
 $keyboard = json_decode(file_get_contents("php://input"),true);
 $method = $_SERVER['REQUEST_METHOD'];
 if($method == "POST" && is_array($keyboard)){
@@ -39,6 +47,9 @@ if($method == "POST" && is_array($keyboard)){
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>پنل مدیریت ربات میرزا</title>
+    <script>
+      window.__MIRZA_API_ORIGIN = window.location.origin + <?php echo json_encode($applicationBasePath); ?>;
+    </script>
     <script type="module" crossorigin src="js/sort_keyboard.js"></script>
     <link rel="stylesheet" crossorigin href="css/sort_keyboard.css">
     <style>
