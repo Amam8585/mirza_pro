@@ -6015,13 +6015,16 @@ n2", $backadmin, 'HTML');
         $dateTime->setTimezone(new DateTimeZone('Asia/Tehran'));
         $lastupdate = jdate('Y/m/d H:i:s', $dateTime->getTimestamp());
     }
-    if ($DataUserOut['data_limit'] != null && $DataUserOut['used_traffic'] != null) {
-        $Percent = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) * 100 / $DataUserOut['data_limit'];
+    $limitValue = isset($DataUserOut['data_limit']) ? (float) $DataUserOut['data_limit'] : 0;
+    $usedTrafficValue = isset($DataUserOut['used_traffic']) ? (float) $DataUserOut['used_traffic'] : 0;
+    if ($limitValue > 0) {
+        $Percent = (($limitValue - $usedTrafficValue) * 100) / $limitValue;
     } else {
-        $Percent = "100";
+        $Percent = 100;
     }
-    if ($Percent < 0)
-        $Percent = -($Percent);
+    if ($Percent < 0) {
+        $Percent = -$Percent;
+    }
     $Percent = round($Percent, 2);
     $text_order .= "
   
@@ -6516,17 +6519,35 @@ n2", $backadmin, 'HTML');
     if ($DataUserOut['status'] == "on_hold") {
         $pricelast = $invoice['price_product'];
     } elseif ($DataUserOut['data_limit'] == null) {
-        $pricetime = ($nameloc['price_product'] / $nameloc['Service_time']) + intval($sumproduct['SUM(price)']);
-        $pricelast = (($DataUserOut['expire'] - time()) / 86400) * $pricetime;
+        $serviceTime = (float) ($nameloc['Service_time'] ?? 0);
+        if ($serviceTime > 0) {
+            $pricetime = ($nameloc['price_product'] / $serviceTime) + intval($sumproduct['SUM(price)']);
+            $pricelast = (($DataUserOut['expire'] - time()) / 86400) * $pricetime;
+        } else {
+            $pricelast = 0;
+        }
     } elseif ($DataUserOut['expire'] == null) {
-        $volumelefts = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) / pow(1024, 3);
-        $volumeleft = $volumelefts / ($DataUserOut['data_limit'] / pow(1024, 3));
-        $pricelast = round($volumeleft * ($nameloc['price_product'] + intval($sumproduct['SUM(price)'])), 2);
+        $dataLimit = isset($DataUserOut['data_limit']) ? (float) $DataUserOut['data_limit'] : 0;
+        if ($dataLimit > 0) {
+            $volumelefts = ($dataLimit - (float) ($DataUserOut['used_traffic'] ?? 0)) / pow(1024, 3);
+            $volumeDivisor = $dataLimit / pow(1024, 3);
+            $volumeleft = $volumeDivisor > 0 ? $volumelefts / $volumeDivisor : 0;
+            $pricelast = round($volumeleft * ($nameloc['price_product'] + intval($sumproduct['SUM(price)'])), 2);
+        } else {
+            $pricelast = 0;
+        }
     } else {
-        $timeleft = (round(($DataUserOut['expire'] - time()) / 86400, 0)) / $nameloc['Service_time'];
-        $volumelefts = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) / pow(1024, 3);
-        $volumeleft = $volumelefts / ($DataUserOut['data_limit'] / pow(1024, 3));
-        $pricelast = round($timeleft * $volumeleft * ($nameloc['price_product'] + intval($sumproduct['SUM(price)'])), 2);
+        $serviceTime = (float) ($nameloc['Service_time'] ?? 0);
+        $dataLimit = isset($DataUserOut['data_limit']) ? (float) $DataUserOut['data_limit'] : 0;
+        $volumeDivisor = $dataLimit / pow(1024, 3);
+        if ($serviceTime > 0 && $volumeDivisor > 0) {
+            $timeleft = (round(($DataUserOut['expire'] - time()) / 86400, 0)) / $serviceTime;
+            $volumelefts = ($dataLimit - (float) ($DataUserOut['used_traffic'] ?? 0)) / pow(1024, 3);
+            $volumeleft = $volumelefts / $volumeDivisor;
+            $pricelast = round($timeleft * $volumeleft * ($nameloc['price_product'] + intval($sumproduct['SUM(price)'])), 2);
+        } else {
+            $pricelast = 0;
+        }
     }
     $pricelast = intval($pricelast);
     if (intval($pricelast) != 0) {

@@ -5,6 +5,9 @@ function telegram($method, $datas = [],$token = null)
     global $APIKEY;
     $token = $token == null ? $APIKEY : $token;
     $url = "https://api.telegram.org/bot" . $token . "/" . $method;
+    if (isset($datas['message_thread_id']) && intval($datas['message_thread_id']) <= 0) {
+        unset($datas['message_thread_id']);
+    }
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
