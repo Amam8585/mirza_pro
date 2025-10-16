@@ -112,7 +112,7 @@ function validate_telegram_init_data($rawData, string $botToken): array
     // hash_hmac, which meant the bot token was used as the key and produced an
     // incorrect secret key – causing every verification attempt to fail with
     // "User verification failed".
-    $secretKey = hash_hmac('sha256', $APIKEY, 'WebAppData', true);
+    $secretKey = hash_hmac('sha256', $botToken, 'WebAppData', true);
     $calculatedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
     if (!hash_equals($calculatedHash, $receivedHash)) {
