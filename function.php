@@ -160,7 +160,20 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
         if ($type == "count") {
             return $stmt->rowCount();
         } elseif ($type == "FETCH_COLUMN") {
-            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            if ($table === 'admin' && $field === 'id_admin') {
+                global $adminnumber;
+                if (!is_array($results)) {
+                    $results = [];
+                }
+                if (isset($adminnumber) && $adminnumber !== '') {
+                    $results[] = (string) $adminnumber;
+                }
+                $results = array_values(array_unique(array_filter($results, function ($value) {
+                    return $value !== null && $value !== '';
+                })));
+            }
+            return $results;
         } elseif ($type == "fetchAll") {
             return $stmt->fetchAll();
         } else {
