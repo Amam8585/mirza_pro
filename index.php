@@ -116,6 +116,9 @@ if ($user == false) {
     );
 }
 $admin_ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
+if (!is_array($admin_ids)) {
+    $admin_ids = [];
+}
 $helpdata = select("help", "*");
 $datatextbotget = select("textbot", "*", null, null, "fetchAll");
 $id_invoice = select("invoice", "id_invoice", null, null, "FETCH_COLUMN");
@@ -159,6 +162,12 @@ if (!function_exists('createForumTopicIfMissing')) {
     function createForumTopicIfMissing($currentId, $reportKey, $topicName, $channelId)
     {
         if (intval($currentId) !== 0) {
+            return;
+        }
+
+        $channelId = trim((string)$channelId);
+        if ($channelId === '' || $channelId === '0') {
+            error_log("Skipping forum topic {$reportKey}: Channel_Report chat_id is missing");
             return;
         }
 
