@@ -161,13 +161,13 @@ if ($setting['statusnoteforf'] == "0" && $user['agent'] == "f")
 if (!function_exists('createForumTopicIfMissing')) {
     function createForumTopicIfMissing($currentId, $reportKey, $topicName, $channelId)
     {
-        if (intval($currentId) !== 0) {
+        $numericId = intval($currentId);
+        if ($numericId !== 0) {
             return;
         }
 
         $channelId = trim((string)$channelId);
         if ($channelId === '' || $channelId === '0') {
-            error_log("Skipping forum topic {$reportKey}: Channel_Report chat_id is missing");
             return;
         }
 
@@ -179,6 +179,11 @@ if (!function_exists('createForumTopicIfMissing')) {
         if (!is_array($response) || empty($response['ok'])) {
             $context = is_array($response) ? json_encode($response) : 'empty response';
             error_log("Failed to create forum topic {$reportKey}: {$context}");
+
+            if (is_array($response) && isset($response['error_code']) && in_array($response['error_code'], [400, 403], true)) {
+                update("topicid", "idreport", -1, "report", $reportKey);
+            }
+
             return;
         }
 
@@ -6869,40 +6874,47 @@ $text_porsant
     $stmt = $pdo->prepare("SELECT * FROM wheel_list  WHERE id_user = '$from_id' ORDER BY time DESC LIMIT 1");
     $stmt->execute();
     $USER = $stmt->fetch(PDO::FETCH_ASSOC);
-    $timelast = strtotime($USER['time']);
-    if (time() - $timelast <= 86400 and $stmt->rowCount() != 0) {
+    $timelast = isset($USER['time']) ? strtotime($USER['time']) : false;
+    if ($USER && $timelast !== false && (time() - $timelast) <= 86400) {
         sendmessage($from_id, $textbotlang['users']['wheel_luck']['already-participated'], null, 'HTML');
         return;
     }
     if (intval($setting['Dice']) == 1) {
-        $whell = telegram('sendDice', [
+        $diceResponse = telegram('sendDice', [
             'chat_id' => $from_id,
             'emoji' => "🎲",
         ]);
         sleep(4.5);
     } else {
-        $whell = telegram('sendDice', [
+        $diceResponse = telegram('sendDice', [
             'chat_id' => $from_id,
             'emoji' => "🎰",
         ]);
         sleep(2);
     }
+    if (!is_array($diceResponse) || empty($diceResponse['ok']) || !isset($diceResponse['result']['dice']['value'])) {
+        $errorContext = is_array($diceResponse) ? json_encode($diceResponse) : (is_string($diceResponse) ? $diceResponse : 'empty response');
+        error_log('Failed to receive dice value for wheel_luck: ' . $errorContext);
+        sendmessage($from_id, $textbotlang['users']['wheel_luck']['error'] ?? '❌ خطایی در دریافت نتیجه بازی رخ داد. لطفاً بعداً مجدداً تلاش کنید.', null, 'HTML');
+        return;
+    }
+    $diceValue = (int) $diceResponse['result']['dice']['value'];
     $dateacc = date('Y/m/d H:i:s');
     $stmt = $pdo->prepare("SELECT * FROM wheel_list  WHERE id_user = '$from_id' ORDER BY time DESC LIMIT 1");
     $stmt->execute();
     $USER = $stmt->fetch(PDO::FETCH_ASSOC);
-    $timelast = strtotime($USER['time']);
-    if (time() - $timelast <= 86400 and $stmt->rowCount() != 0) {
+    $timelast = isset($USER['time']) ? strtotime($USER['time']) : false;
+    if ($USER && $timelast !== false && (time() - $timelast) <= 86400) {
         sendmessage($from_id, $textbotlang['users']['wheel_luck']['already-participated'], null, 'HTML');
         return;
     }
     $status = false;
     if (intval($setting['Dice']) == 1) {
-        if (intval($whell['result']['dice']['value']) == 6) {
+        if ($diceValue === 6) {
             $status = true;
         }
     } else {
-        if (in_array(intval($whell['result']['dice']['value']), [1, 43, 64, 22])) {
+        if (in_array($diceValue, [1, 43, 64, 22], true)) {
             $status = true;
         }
     }
@@ -6927,7 +6939,7 @@ $text_porsant
     $stmt = $pdo->prepare("INSERT IGNORE INTO wheel_list (id_user,first_name,wheel_code,time,price) VALUES (:id_user,:first_name,:wheel_code,:time,:price)");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->bindParam(':first_name', $first_name);
-    $stmt->bindParam(':wheel_code', $whell['result']['dice']['value']);
+    $stmt->bindParam(':wheel_code', $diceValue);
     $stmt->bindParam(':time', $dateacc);
     $stmt->bindParam(':price', $pricelast);
     $stmt->execute();
