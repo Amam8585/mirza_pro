@@ -183,12 +183,16 @@ if (in_array($text, $textadmin) || $datain == "admin") {
     $stmt->bindParam(':requestedDateend', $end_time_timestamp);
     $stmt->execute();
     $suminvoiceday = $stmt->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'];
-    ;
+    $invoicesum = (float) ($invoicesum ?? 0);
+    $extendsum = (float) ($extendsum ?? 0);
+    $suminvoiceday = (float) ($suminvoiceday ?? 0);
+    $statistics = (int) ($statistics ?? 0);
+    $statisticsorder = (int) ($statisticsorder ?? 0);
     $paycount = "";
-    $ratecustomer = round(($statisticsorder / $statisticsorder) * 100, 2);
-    $avgbuy_customer = number_format($invoicesum / $statisticsorder);
+    $ratecustomer = $statistics > 0 ? round(($statisticsorder / $statistics) * 100, 2) : 0;
+    $avgbuy_customer = $statisticsorder > 0 ? number_format($invoicesum / $statisticsorder) : '0';
     $monthe_buy = number_format($suminvoiceday * 30);
-    $percent_of_extend = $extendsum != 0 ? round(($extendsum / $invoicesum) * 100, 2) : 0;
+    $percent_of_extend = $invoicesum > 0 ? round(($extendsum / $invoicesum) * 100, 2) : 0;
     $percent_of_extend = $percent_of_extend > 100 ? 100 : $percent_of_extend;
     $extendsum = number_format($extendsum, 0);
     if (count($statispay) != 0) {

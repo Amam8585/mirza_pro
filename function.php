@@ -1076,13 +1076,7 @@ function checktelegramip()
 }
 function addCronIfNotExists($cronCommand)
 {
-    $existingCron = shell_exec('crontab -l');
-    if (strpos($existingCron, $cronCommand) === false) {
-        $newCron = $existingCron . "\n" . $cronCommand . "\n";
-        file_put_contents('/tmp/mycron', $newCron);
-        shell_exec('crontab /tmp/mycron');
-        unlink('/tmp/mycron');
-    }
+    return true;
 }
 
 function activecron()
