@@ -6828,14 +6828,35 @@ $text_porsant
     $status = "waiting";
     $type = "None";
     $current_time = time();
-    $stmt->execute([
-        ':id' => $from_id,
-        ':username' => $username,
-        ':time' => $current_time,
-        ':description' => $text,
-        ':status' => $status,
-        ':type' => $type,
-    ]);
+    $description = $text;
+    try {
+        $stmt->execute([
+            ':id' => $from_id,
+            ':username' => $username,
+            ':time' => $current_time,
+            ':description' => $description,
+            ':status' => $status,
+            ':type' => $type,
+        ]);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Incorrect string value') !== false) {
+            $sanitisedDescription = preg_replace('/[\x{10000}-\x{10FFFF}]/u', '', $description);
+            if ($sanitisedDescription !== $description) {
+                $stmt->execute([
+                    ':id' => $from_id,
+                    ':username' => $username,
+                    ':time' => $current_time,
+                    ':description' => $sanitisedDescription,
+                    ':status' => $status,
+                    ':type' => $type,
+                ]);
+            } else {
+                throw $e;
+            }
+        } else {
+            throw $e;
+        }
+    }
     $textrequestagent = sprintf($textbotlang['users']['agenttext']['agent-request'], $from_id, $username, $first_name, $text);
     $keyboardmanage = json_encode([
         'inline_keyboard' => [
