@@ -5072,9 +5072,23 @@ $textonebuy
             sendmessage($from_id, "❌ حداقل مبلغ واریزی این روش پرداخت باید $mainbalance و حداکثر $maxbalance تومان باشد", null, 'HTML');
             return;
         }
-        $card_info = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM card_number  ORDER BY RAND() LIMIT 1"));
+        $cardQuery = mysqli_query($connect, "SELECT * FROM card_number  ORDER BY RAND() LIMIT 1");
+        if ($cardQuery === false) {
+            error_log('Failed to fetch card_number data: ' . mysqli_error($connect));
+            sendmessage($from_id, "❌ خطای داخلی در بازیابی کارت بانکی رخ داد. لطفاً بعداً تلاش کنید.", null, 'HTML');
+            return;
+        }
+
+        $card_info = mysqli_fetch_assoc($cardQuery);
+        if (!$card_info || empty($card_info['cardnumber']) || empty($card_info['namecard'])) {
+            sendmessage($from_id, "❌ کارت بانکی فعالی برای این روش پرداخت یافت نشد. لطفاً بعداً تلاش کنید یا با پشتیبانی تماس بگیرید.", null, 'HTML');
+            mysqli_free_result($cardQuery);
+            return;
+        }
+
         $card_number = $card_info['cardnumber'];
         $PaySettingname = $card_info['namecard'];
+        mysqli_free_result($cardQuery);
         $price_copy = $user['Processing_value'];
         if ($PaySetting == "onautoconfirm") {
             $random_number = rand(0, 2000);
