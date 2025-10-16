@@ -213,25 +213,44 @@ function tronratee()
         ],
     ]);
 
-    $response = @file_get_contents('https://api.com/b.php', false, $context);
+    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tron,toncoin,tether&vs_currencies=irr';
+    $response = @file_get_contents($url, false, $context);
 
     if ($response === false) {
-        error_log('Failed to connect to api.com');
+        error_log('Failed to fetch currency rates from CoinGecko');
         return ['ok' => false, 'result' => []];
     }
 
     $data = json_decode($response, true);
     if (!is_array($data)) {
-        error_log('Invalid response received from api.com');
+        error_log('Invalid response received from CoinGecko');
         return ['ok' => false, 'result' => []];
     }
 
-    if (!isset($data['result']) || !is_array($data['result'])) {
-        error_log('Missing result field in api.com response');
-        return ['ok' => false, 'result' => []];
+    $requiredRates = [
+        'TRX' => $data['tron']['irr'] ?? null,
+        'Ton' => $data['toncoin']['irr'] ?? null,
+        'USD' => $data['tether']['irr'] ?? null,
+    ];
+
+    foreach ($requiredRates as $symbol => $value) {
+        if (!is_numeric($value) || $value <= 0) {
+            error_log('Missing or invalid rate for ' . $symbol . ' from CoinGecko');
+            return ['ok' => false, 'result' => []];
+        }
     }
 
-    return ['ok' => true, 'result' => $data['result']];
+    $toToman = static function ($rialValue) {
+        return round($rialValue / 10, 2);
+    };
+
+    $result = [
+        'TRX' => $toToman($requiredRates['TRX']),
+        'Ton' => $toToman($requiredRates['Ton']),
+        'USD' => $toToman($requiredRates['USD']),
+    ];
+
+    return ['ok' => true, 'result' => $result];
 }
 
 function requireTronRates(array $keys = [])
@@ -1240,20 +1259,47 @@ function addBackgroundImage($urlimage, $qrCodeResult, $backgroundPath)
 }
 function checktelegramip()
 {
-    $telegram_ip_ranges = [
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!is_string($clientIp) || $clientIp === '') {
+        return false;
+    }
+
+    $clientIp = trim($clientIp);
+    if (!filter_var($clientIp, FILTER_VALIDATE_IP)) {
+        return false;
+    }
+
+    $telegramIpRanges = [
         ['lower' => '149.154.160.0', 'upper' => '149.154.175.255'],
-        ['lower' => '91.108.4.0', 'upper' => '91.108.7.255']
+        ['lower' => '91.108.4.0', 'upper' => '91.108.7.255'],
+        ['lower' => '2001:67c:4e8::', 'upper' => '2001:67c:4e8:ffff:ffff:ffff:ffff:ffff']
     ];
-    $ip_dec = (float) sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
-    $ok = false;
-    foreach ($telegram_ip_ranges as $telegram_ip_range)
-        if (!$ok) {
-            $lower_dec = (float) sprintf("%u", ip2long($telegram_ip_range['lower']));
-            $upper_dec = (float) sprintf("%u", ip2long($telegram_ip_range['upper']));
-            if ($ip_dec >= $lower_dec and $ip_dec <= $upper_dec)
-                $ok = true;
+
+    foreach ($telegramIpRanges as $range) {
+        if (isClientIpInRange($clientIp, $range['lower'], $range['upper'])) {
+            return true;
         }
-    return $ok;
+    }
+
+    return false;
+}
+
+function isClientIpInRange($clientIp, $lowerBound, $upperBound)
+{
+    $clientPacked = inet_pton($clientIp);
+    $lowerPacked = inet_pton($lowerBound);
+    $upperPacked = inet_pton($upperBound);
+
+    if ($clientPacked === false || $lowerPacked === false || $upperPacked === false) {
+        return false;
+    }
+
+    $length = strlen($clientPacked);
+    if ($length !== strlen($lowerPacked) || $length !== strlen($upperPacked)) {
+        return false;
+    }
+
+    return strcmp($clientPacked, $lowerPacked) >= 0 && strcmp($clientPacked, $upperPacked) <= 0;
 }
 function addCronIfNotExists($cronCommand)
 {
