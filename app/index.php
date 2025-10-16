@@ -43,6 +43,7 @@ $config = [
     <script>
       window.__APP_CONFIG__ = <?php echo json_encode($config, JSON_UNESCAPED_SLASHES); ?>;
     </script>
+    <link rel="stylesheet" href="./fonts/fonts.css" />
     <script type="module" crossorigin src="./assets/index-C-2a0Dur.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/vendor-CIGJ9g2q.js">
     <link rel="stylesheet" crossorigin href="./assets/index-BoHBsj0Z.css">

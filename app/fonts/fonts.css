@@ -1,0 +1,55 @@
+@font-face {
+  font-family: 'Vazir';
+  src: url('./Vazir-Light.woff2') format('woff2'),
+       url('./Vazir-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./Vazir-Medium.woff2') format('woff2'),
+       url('./Vazir-Medium.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./Vazir-Medium.woff2') format('woff2'),
+       url('./Vazir-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./Vazir-Bold.woff2') format('woff2'),
+       url('./Vazir-Bold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./Vazir-Bold.woff2') format('woff2'),
+       url('./Vazir-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root,
+body {
+  font-family: 'Vazir', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body *,
+body *::before,
+body *::after {
+  font-family: inherit;
+}
