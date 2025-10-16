@@ -1,6 +1,49 @@
 <?php
 session_start();
-require_once '../config.php'; 
+require_once '../config.php';
+
+function ensureXuiTableExists(PDO $pdo)
+{
+    try {
+        $result = $pdo->query("SHOW TABLES LIKE 'x_ui'");
+        if ($result === false || $result->rowCount() === 0) {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS `x_ui` (" .
+                "`codepanel` VARCHAR(100) NOT NULL," .
+                "`setting` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," .
+                "`protocol` VARCHAR(100) DEFAULT NULL," .
+                "PRIMARY KEY (`codepanel`)" .
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+        }
+    } catch (PDOException $e) {
+        error_log('Failed to ensure x_ui table: ' . $e->getMessage());
+        throw $e;
+    }
+}
+
+ensureXuiTableExists($pdo);
+
+function synchronizeXuiPanels(PDO $pdo)
+{
+    try {
+        $panels = $pdo->query("SELECT code_panel FROM marzban_panel");
+        if ($panels !== false) {
+            $insert = $pdo->prepare("INSERT INTO x_ui (codepanel, setting) VALUES (:codepanel, '{}') ON DUPLICATE KEY UPDATE codepanel = codepanel");
+            while ($panel = $panels->fetch(PDO::FETCH_ASSOC)) {
+                if (!empty($panel['code_panel'])) {
+                    $insert->execute([':codepanel' => $panel['code_panel']]);
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Failed to synchronize x_ui table with marzban_panel: ' . $e->getMessage());
+        throw $e;
+    }
+}
+
+synchronizeXuiPanels($pdo);
+
 function update($table, $field, $newValue, $whereField = null, $whereValue = null) {
     global $pdo,$user;
 
@@ -21,22 +64,69 @@ function update($table, $field, $newValue, $whereField = null, $whereValue = nul
     }
 }
 
-    $query = $pdo->prepare("SELECT * FROM admin WHERE username=:username");
-    $query->bindParam("username", $_SESSION["user"], PDO::PARAM_STR);
-    $query->execute();
-    $result = $query->fetch(PDO::FETCH_ASSOC);
-    $query = $pdo->prepare("SELECT * FROM x_ui");
-    $query->execute();
-    $resultpanel = $query->fetchAll();
+$query = $pdo->prepare("SELECT * FROM admin WHERE username=:username");
+$query->bindParam("username", $_SESSION["user"], PDO::PARAM_STR);
+$query->execute();
+$result = $query->fetch(PDO::FETCH_ASSOC);
+
+$query = $pdo->prepare("SELECT code_panel, name_panel FROM marzban_panel ORDER BY name_panel");
+$query->execute();
+$resultpanel = $query->fetchAll(PDO::FETCH_ASSOC);
+
 if( !isset($_SESSION["user"]) || !$result ){
     header('Location: login.php');
     return;
 }
-    if($_GET['action'] == "save"){
-        update("x_ui", "setting", $_POST['settings'], "codepanel", $_POST['namepanel']);
-        header('Location: seeting_x_ui.php');
+
+$action = $_GET['action'] ?? '';
+$selectedPanelCode = '';
+$settingsValue = '';
+
+if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST'){
+    $selectedPanelCode = $_POST['namepanel'] ?? '';
+    $settingsValue = $_POST['settings'] ?? '';
+    if ($selectedPanelCode !== '') {
+        $stmt = $pdo->prepare("SELECT 1 FROM x_ui WHERE codepanel = :codepanel");
+        $stmt->execute([':codepanel' => $selectedPanelCode]);
+        if ($stmt->fetchColumn() === false) {
+            $insert = $pdo->prepare("INSERT INTO x_ui (codepanel, setting) VALUES (:codepanel, :setting)");
+            $insert->execute([
+                ':codepanel' => $selectedPanelCode,
+                ':setting' => $settingsValue
+            ]);
+        } else {
+            $updateStmt = $pdo->prepare("UPDATE x_ui SET setting = :setting WHERE codepanel = :codepanel");
+            $updateStmt->execute([
+                ':setting' => $settingsValue,
+                ':codepanel' => $selectedPanelCode
+            ]);
+        }
     }
-$namepanel = htmlspecialchars($_POST['namepanel'], ENT_QUOTES, 'UTF-8');
+    header('Location: seeting_x_ui.php');
+    exit;
+}
+
+if ($action === 'change' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $selectedPanelCode = $_POST['namepanel'] ?? '';
+}
+
+$sanitizedPanelCode = htmlspecialchars($selectedPanelCode, ENT_QUOTES, 'UTF-8');
+
+if ($action === 'change' && $selectedPanelCode !== '') {
+    $stmt = $pdo->prepare("SELECT setting FROM x_ui WHERE codepanel=:codepanel");
+    $stmt->execute([':codepanel' => $selectedPanelCode]);
+    $getsetting = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($getsetting && isset($getsetting['setting'])) {
+        $decoded = json_decode($getsetting['setting'], true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $settingsValue = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        } else {
+            $settingsValue = $getsetting['setting'];
+        }
+    }
+}
+
+$settingsValueForTextarea = htmlspecialchars($settingsValue, ENT_NOQUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -80,7 +170,7 @@ $namepanel = htmlspecialchars($_POST['namepanel'], ENT_QUOTES, 'UTF-8');
                 <div class="row">
                     <aside class="col-lg-12">
                     <?php
-                        if($_GET['action'] != "change"){?>
+                        if($action != "change"){?>
                             <section class="panel">
                             <div class="panel-body bio-graph-info">
                                 <h1>در این صفحه می توانید تعیین کنید  چه تنظیمات برای کانفیگ ساخته شود در پنل x-ui</h1>
@@ -91,13 +181,12 @@ $namepanel = htmlspecialchars($_POST['namepanel'], ENT_QUOTES, 'UTF-8');
                                             <select required style ="padding:0;" name = "namepanel" class="form-control input-sm m-bot15">
                                                   <option value="">انتخاب نشده</option>
                                                 <?php
-                                                if(count($resultpanel)>=0){
+                                                if(!empty($resultpanel)){
                                                 foreach($resultpanel as $panel){
-                                                $query = $pdo->prepare("SELECT * FROM marzban_panel WHERE code_panel=:code_panel");
-                                                $query->bindParam("code_panel", $panel['codepanel'], PDO::PARAM_STR);
-                                                $query->execute();
-                                                $namepanel = $query->fetch(PDO::FETCH_ASSOC);
-                                                echo "<option value = \"{$panel['codepanel']}\">{$namepanel['name_panel']}</option>";
+                                                $optionValue = htmlspecialchars($panel['code_panel'], ENT_QUOTES, 'UTF-8');
+                                                $optionLabel = htmlspecialchars($panel['name_panel'], ENT_QUOTES, 'UTF-8');
+                                                $isSelected = $panel['code_panel'] === $selectedPanelCode ? ' selected' : '';
+                                                echo "<option value = \"{$optionValue}\"{$isSelected}>{$optionLabel}</option>";
                                                 }
                                                 }
                                                 ?>
@@ -116,7 +205,7 @@ $namepanel = htmlspecialchars($_POST['namepanel'], ENT_QUOTES, 'UTF-8');
                         }
                         ?>
                         <?php
-                        if($_GET['action'] == "change"){?>
+                        if($action == "change"){?>
                         <section class="panel">
                             <div class="panel-body bio-graph-info">
                                 <h1>در این صفحه می توانید تعیین کنید  چه تنظیمات برای کانفیگ ساخته شود در پنل x-ui</h1>
@@ -131,16 +220,8 @@ $namepanel = htmlspecialchars($_POST['namepanel'], ENT_QUOTES, 'UTF-8');
                                     <div class="form-group">
                                         <label class="col-lg-2 control-label">تنظیمات</label>
                                         <div class="col-lg-10">
-                                            <textarea id="settings" style = "direction:ltr;" name="settings" id="setting" class="form-control" cols="50" rows="25"><?php
-                                                $query = $pdo->prepare("SELECT * FROM x_ui WHERE codepanel=:codepanel");
-                                                $query->bindParam("codepanel", $namepanel, PDO::PARAM_STR);
-                                                $query->execute();
-                                                $getsetting = $query->fetch(PDO::FETCH_ASSOC);
-                                                $data = json_decode($getsetting['setting']);
-                                                echo json_encode($data, JSON_PRETTY_PRINT);
-                                                ?>
-                                           </textarea>
-                                           <input name = "namepanel" type= "hidden" value = "<?php echo $namepanel?>">
+                                            <textarea id="settings" style = "direction:ltr;" name="settings" class="form-control" cols="50" rows="25"><?php echo $settingsValueForTextarea; ?></textarea>
+                                           <input name = "namepanel" type= "hidden" value = "<?php echo $sanitizedPanelCode?>">
                                         </div>
                                     </div>
                                     </div>
