@@ -72,6 +72,28 @@ function deleteDirectory($directory)
     return @rmdir($directory);
 }
 
+function ensureTableUtf8mb4($table)
+{
+    global $pdo;
+
+    try {
+        $pdo->exec("ALTER TABLE `{$table}` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        return true;
+    } catch (PDOException $e) {
+        error_log('Failed to convert table to utf8mb4: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function normaliseUpdateValue($value)
+{
+    if (is_array($value) || is_object($value)) {
+        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    return $value;
+}
+
 function copyDirectoryContents($source, $destination)
 {
     if (!is_dir($source)) {
@@ -120,21 +142,50 @@ function update($table, $field, $newValue, $whereField = null, $whereValue = nul
 {
     global $pdo, $user;
 
-    if ($whereField !== null) {
-        $stmt = $pdo->prepare("SELECT $field FROM $table WHERE $whereField = ? FOR UPDATE");
-        $stmt->execute([$whereValue]);
-        $currentValue = $stmt->fetchColumn();
-        $stmt = $pdo->prepare("UPDATE $table SET $field = ? WHERE $whereField = ?");
-        $stmt->execute([$newValue, $whereValue]);
-    } else {
-        $stmt = $pdo->prepare("UPDATE $table SET $field = ?");
-        $stmt->execute([$newValue]);
+    $valueToStore = normaliseUpdateValue($newValue);
+
+    $executeUpdate = function ($value) use ($pdo, $table, $field, $whereField, $whereValue) {
+        if ($whereField !== null) {
+            $stmt = $pdo->prepare("SELECT $field FROM $table WHERE $whereField = ? FOR UPDATE");
+            $stmt->execute([$whereValue]);
+            $stmt = $pdo->prepare("UPDATE $table SET $field = ? WHERE $whereField = ?");
+            $stmt->execute([$value, $whereValue]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE $table SET $field = ?");
+            $stmt->execute([$value]);
+        }
+    };
+
+    try {
+        $executeUpdate($valueToStore);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Incorrect string value') !== false) {
+            $tableConverted = ensureTableUtf8mb4($table);
+            if ($tableConverted) {
+                try {
+                    $executeUpdate($valueToStore);
+                } catch (PDOException $retryException) {
+                    error_log('Retry after charset conversion failed: ' . $retryException->getMessage());
+                    throw $retryException;
+                }
+            } else {
+                $fallbackValue = is_string($valueToStore) ? @iconv('UTF-8', 'UTF-8//IGNORE', $valueToStore) : $valueToStore;
+                if ($fallbackValue === false) {
+                    $fallbackValue = '';
+                }
+                $executeUpdate($fallbackValue);
+            }
+        } else {
+            throw $e;
+        }
     }
+
     $date = date("Y-m-d H:i:s");
     if (!isset($user['step'])) {
         $user['step'] = '';
     }
-    $logss = "{$table}_{$field}_{$newValue}_{$whereField}_{$whereValue}_{$user['step']}_$date";
+    $logValue = is_scalar($valueToStore) ? $valueToStore : json_encode($valueToStore, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $logss = "{$table}_{$field}_{$logValue}_{$whereField}_{$whereValue}_{$user['step']}_$date";
     if ($field != "message_count" || $field != "last_message_time") {
         file_put_contents('log.txt', "\n" . $logss, FILE_APPEND);
     }
