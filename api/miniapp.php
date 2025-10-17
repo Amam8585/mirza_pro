@@ -371,7 +371,7 @@ switch ($data['actions']) {
             $stmt->execute();
             $category_list = [];
             $panel = select("marzban_panel", "*", "code_panel", $data['id_panel'], "select");
-            if ($panel == false) {
+            if (empty($panel)) {
                 echo json_encode(array(
                     'status' => false,
                     'msg' => "panel not fonud!(invalid id_panel)"
@@ -424,7 +424,7 @@ switch ($data['actions']) {
             }
             $category_time_list = [];
             $panel = select("marzban_panel", "*", "code_panel", $data['id_panel'], "select");
-            if ($panel == false) {
+            if (empty($panel)) {
                 echo json_encode(array(
                     'status' => false,
                     'msg' => "panel not fonud!(invalid id_panel)"
@@ -557,7 +557,7 @@ switch ($data['actions']) {
         $user_info = select("user", "*", "token", $tokencheck, "select");
         if ($user_info) {
             $panel = select("marzban_panel", "*", "code_panel", $data['id_panel'], "select");
-            if ($panel == false) {
+            if (empty($panel)) {
                 echo json_encode(array(
                     'status' => false,
                     'msg' => "panel not fonud!(invalid id_panel)"
@@ -634,7 +634,7 @@ switch ($data['actions']) {
         $user_info = select("user", "*", "token", $tokencheck, "select");
         if ($user_info) {
             $panel = select("marzban_panel", "*", "code_panel", $data['id_panel'], "select");
-            if ($panel == false) {
+            if (empty($panel)) {
                 echo json_encode(array(
                     'status' => false,
                     'msg' => "panel not fonud!(invalid id_panel)"
@@ -687,7 +687,7 @@ switch ($data['actions']) {
             return;
         }
         $panel = select("marzban_panel", "*", "code_panel", $data['country_id'], "select");
-        if ($panel == false) {
+        if (empty($panel)) {
             http_response_code(500);
             echo json_encode(array(
                 'status' => false,
@@ -747,7 +747,7 @@ switch ($data['actions']) {
                 return;
             }
         }
-        if ($product == false) {
+        if (empty($product)) {
             http_response_code(500);
             echo json_encode(array(
                 'status' => false,
