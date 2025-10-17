@@ -77,6 +77,19 @@ function ensureTableUtf8mb4($table)
     global $pdo;
 
     try {
+        $stmt = $pdo->prepare('SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
+        $stmt->execute([$table]);
+        $currentCollation = $stmt->fetchColumn();
+
+        if ($currentCollation === false) {
+            error_log("Failed to detect current collation for table {$table}");
+            return false;
+        }
+
+        if (stripos((string) $currentCollation, 'utf8mb4') === 0) {
+            return true;
+        }
+
         $pdo->exec("ALTER TABLE `{$table}` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         return true;
     } catch (PDOException $e) {

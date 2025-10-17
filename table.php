@@ -542,21 +542,23 @@ try {
     if (!$table_exists) {
         $result = $connect->query("CREATE TABLE Payment_report (
         id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        id_user varchar(200),
-        id_order varchar(2000),
-        time varchar(200)  NULL,
-        at_updated varchar(200)  NULL,
-        price varchar(200) NULL,
-        dec_not_confirmed TEXT NULL,
-        Payment_Method varchar(400) NULL,
-        payment_Status varchar(100) NULL,
-        bottype varchar(300) NULL,
+        id_user varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        id_order varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        time varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        at_updated varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        price varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        dec_not_confirmed TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        Payment_Method varchar(400) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        payment_Status varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        bottype varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
         message_id INT NULL,
-        id_invoice varchar(1000) NULL)");
+        id_invoice varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL)
+        ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
         if (!$result) {
             echo "table Payment_report" . mysqli_error($connect);
         }
     } else {
+        ensureTableUtf8mb4('Payment_report');
         addFieldToTable("Payment_report", "message_id", null, "INT");
         $Check_filde = $connect->query("SHOW COLUMNS FROM Payment_report LIKE 'Payment_Method'");
         if (mysqli_num_rows($Check_filde) != 1) {
@@ -1197,15 +1199,18 @@ try {
 
     if (!$table_exists) {
         $result = $connect->query("CREATE TABLE Requestagent (
-        id varchar(500) PRIMARY KEY,
-        username  varchar(500)  NOT NULL,
-        time  varchar(500)  NOT NULL,
-        Description  varchar(500)  NOT NULL,
-        status  varchar(500)  NOT NULL,
-        type  varchar(500)  NOT NULL)");
+        id varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci PRIMARY KEY,
+        username  varchar(500)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        time  varchar(500)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        Description  varchar(500)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        status  varchar(500)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        type  varchar(500)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL)
+        ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
         if (!$result) {
             echo "table Requestagent" . mysqli_error($connect);
         }
+    } else {
+        ensureTableUtf8mb4('Requestagent');
     }
 } catch (Exception $e) {
     file_put_contents('error_log Requestagent', $e->getMessage());
