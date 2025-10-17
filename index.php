@@ -405,6 +405,12 @@ if ($user['joinchannel'] != "active") {
             if (count($channels) == 0) {
                 deletemessage($from_id, $message_id);
                 sendmessage($from_id, $datatextbot['text_start'], $keyboard, 'html');
+                telegram('answerCallbackQuery', [
+                    'callback_query_id' => $callback_query_id,
+                    'text' => $textbotlang['users']['channel']['confirmed'],
+                    'show_alert' => false,
+                    'cache_time' => 5,
+                ]);
                 return;
             }
             $keyboardchannel = [
@@ -426,6 +432,12 @@ if ($user['joinchannel'] != "active") {
             $keyboardchannel['inline_keyboard'][] = [['text' => $textbotlang['users']['channel']['confirmjoin'], 'callback_data' => "confirmchannel"]];
             $keyboardchannel = json_encode($keyboardchannel);
             Editmessagetext($from_id, $message_id, $datatextbot['text_channel'], $keyboardchannel);
+            telegram('answerCallbackQuery', [
+                'callback_query_id' => $callback_query_id,
+                'text' => $textbotlang['users']['channel']['notconfirmed'],
+                'show_alert' => true,
+                'cache_time' => 5,
+            ]);
             $partsaffiliates = explode("_", $user['Processing_value_four']);
             if ($partsaffiliates[0] == "affiliates") {
                 $affiliatesid = $partsaffiliates[1];
