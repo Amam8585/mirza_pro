@@ -6849,6 +6849,7 @@ $text_porsant
     $type = "None";
     $current_time = time();
     $description = $text;
+    $requestAgentInserted = false;
     try {
         $stmt->execute([
             ':id' => $from_id,
@@ -6858,24 +6859,49 @@ $text_porsant
             ':status' => $status,
             ':type' => $type,
         ]);
+        $requestAgentInserted = true;
     } catch (PDOException $e) {
         if (strpos($e->getMessage(), 'Incorrect string value') !== false) {
-            $sanitisedDescription = preg_replace('/[\x{10000}-\x{10FFFF}]/u', '', $description);
-            if ($sanitisedDescription !== $description) {
-                $stmt->execute([
-                    ':id' => $from_id,
-                    ':username' => $username,
-                    ':time' => $current_time,
-                    ':description' => $sanitisedDescription,
-                    ':status' => $status,
-                    ':type' => $type,
-                ]);
-            } else {
-                throw $e;
+            $tableConverted = ensureTableUtf8mb4('Requestagent');
+            if ($tableConverted) {
+                try {
+                    $stmt->execute([
+                        ':id' => $from_id,
+                        ':username' => $username,
+                        ':time' => $current_time,
+                        ':description' => $description,
+                        ':status' => $status,
+                        ':type' => $type,
+                    ]);
+                    $requestAgentInserted = true;
+                } catch (PDOException $retryException) {
+                    error_log('Retry after charset conversion failed: ' . $retryException->getMessage());
+                }
+            }
+
+            if (!$requestAgentInserted) {
+                $sanitisedDescription = preg_replace('/[\x{10000}-\x{10FFFF}]/u', '', $description);
+                if ($sanitisedDescription !== $description) {
+                    $stmt->execute([
+                        ':id' => $from_id,
+                        ':username' => $username,
+                        ':time' => $current_time,
+                        ':description' => $sanitisedDescription,
+                        ':status' => $status,
+                        ':type' => $type,
+                    ]);
+                    $requestAgentInserted = true;
+                } else {
+                    throw $e;
+                }
             }
         } else {
             throw $e;
         }
+    }
+
+    if (!$requestAgentInserted) {
+        throw new RuntimeException('Failed to persist agent request description.');
     }
     $textrequestagent = sprintf($textbotlang['users']['agenttext']['agent-request'], $from_id, $username, $first_name, $text);
     $keyboardmanage = json_encode([
