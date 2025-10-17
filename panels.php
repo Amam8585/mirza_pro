@@ -380,7 +380,13 @@ class ManagePanel
         $Output = array();
         global $pdo, $domainhosts, $new_marzban;
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");
-        if ($Get_Data_Panel['subvip'] == "onsubvip") {
+        if (!$Get_Data_Panel || !is_array($Get_Data_Panel)) {
+            return array(
+                'status' => 'Unsuccessful',
+                'msg' => 'Panel Not Found'
+            );
+        }
+        if (isset($Get_Data_Panel['subvip']) && $Get_Data_Panel['subvip'] == "onsubvip") {
             $inoice = select("invoice", "*", "username", $username, "select");
         } else {
             $inoice = false;

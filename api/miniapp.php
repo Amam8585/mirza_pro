@@ -153,24 +153,45 @@ switch ($data['actions']) {
         $username = $data['username'];
         $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :user_id AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND username = :username");
         $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->bindValue(':username', $username, PDO::PARAM_INT);
+        $stmt->bindValue(':username', $username, PDO::PARAM_STR);
         $stmt->execute();
         $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($invoice) {
             $panel = select("marzban_panel", "*", "name_panel", $invoice['Service_location'], "select");
+            if (!$panel) {
+                http_response_code(404);
+                echo json_encode([
+                    'status' => false,
+                    'msg' => "Panel Not Found",
+                    'obj' => []
+                ]);
+                return;
+            }
             $DataUserOut = $ManagePanel->DataUser($invoice['Service_location'], $invoice['username']);
-            $data_limit = $DataUserOut['data_limit'] / pow(1024, 3);
-            $used_Traffic = $DataUserOut['used_traffic'] / pow(1024, 3);
-            $remaining_traffic = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) / pow(1024, 3);
+            if (!is_array($DataUserOut) || !array_key_exists('data_limit', $DataUserOut) || !array_key_exists('used_traffic', $DataUserOut)) {
+                http_response_code(502);
+                echo json_encode([
+                    'status' => false,
+                    'msg' => isset($DataUserOut['msg']) ? $DataUserOut['msg'] : "Service data unavailable",
+                    'obj' => []
+                ]);
+                return;
+            }
+            $data_limit_bytes = is_numeric($DataUserOut['data_limit']) ? (float)$DataUserOut['data_limit'] : 0;
+            $used_traffic_bytes = is_numeric($DataUserOut['used_traffic']) ? (float)$DataUserOut['used_traffic'] : 0;
+            $remaining_traffic_bytes = max($data_limit_bytes - $used_traffic_bytes, 0);
+            $data_limit = $data_limit_bytes / pow(1024, 3);
+            $used_Traffic = $used_traffic_bytes / pow(1024, 3);
+            $remaining_traffic = $remaining_traffic_bytes / pow(1024, 3);
             $config = [];
             if (in_array($panel['type'], ['marzban', 'marzneshin', 'alireza_single', 'x-ui_single', 'hiddify', 'eylanpanel'])) {
-                if ($panel['sublink'] == "onsublink") {
+                if ($panel['sublink'] == "onsublink" && !empty($DataUserOut['subscription_url'])) {
                     $config[] = [
                         'type' => "link",
                         'value' => $DataUserOut['subscription_url']
                     ];
                 }
-                if ($panel['config'] == "onconfig") {
+                if ($panel['config'] == "onconfig" && !empty($DataUserOut['links'])) {
                     $config[] = [
                         'type' => "config",
                         'value' => $DataUserOut['links']
@@ -179,16 +200,16 @@ switch ($data['actions']) {
             } elseif ($panel['type'] == "WGDashboard") {
                 $config[] = [
                     'type' => "file",
-                    'value' => $DataUserOut['subscription_url'],
+                    'value' => $DataUserOut['subscription_url'] ?? '',
                     'filename' => $panel['inboundid'] . "_" . $invoice['id_user'] . "_" . $invoice['id_invoice'] . ".config"
                 ];
             } elseif (in_array($panel['type'], ['mikrotik', 'ibsng'])) {
                 $config[] = [
                     'type' => "password",
-                    'value' => $DataUserOut['password']
+                    'value' => $DataUserOut['password'] ?? ''
                 ];
             }
-            if ($DataUserOut['sub_updated_at']  !== null) {
+            if (isset($DataUserOut['sub_updated_at']) && $DataUserOut['sub_updated_at']  !== null) {
                 $sub_updated = $DataUserOut['sub_updated_at'];
                 $dateTime = new DateTime($sub_updated, new DateTimeZone('UTC'));
                 $dateTime->setTimezone(new DateTimeZone('Asia/Tehran'));
@@ -196,9 +217,9 @@ switch ($data['actions']) {
             } else {
                 $lastupdate = null;
             }
-            if ($DataUserOut['online_at'] == "online") {
+            if (($DataUserOut['online_at'] ?? null) == "online") {
                 $lastonline = 'آنلاین';
-            } elseif ($DataUserOut['online_at'] == "offline") {
+            } elseif (($DataUserOut['online_at'] ?? null) == "offline") {
                 $lastonline = 'آفلاین';
             } else {
                 if (isset($DataUserOut['online_at']) && $DataUserOut['online_at'] !== null) {
@@ -208,13 +229,15 @@ switch ($data['actions']) {
                     $lastonline = "متصل نشده";
                 }
             }
-            $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : 'نامحدود';
+            $expireTimestamp = isset($DataUserOut['expire']) && is_numeric($DataUserOut['expire']) ? (int)$DataUserOut['expire'] : 0;
+            $expirationDate = $expireTimestamp ? jdate('Y/m/d', $expireTimestamp) : 'نامحدود';
+            $usernameOutput = $DataUserOut['username'] ?? $invoice['username'];
             echo json_encode([
                 'status' => true,
                 'msg' => "Successful",
                 'obj' => array(
                     'status' => $DataUserOut['status'],
-                    'username' => $DataUserOut['username'],
+                    'username' => $usernameOutput,
                     'product_name' => $invoice['name_product'],
                     'total_traffic_gb' => round($data_limit, 2),
                     'used_traffic_gb' => round($used_Traffic, 2),
