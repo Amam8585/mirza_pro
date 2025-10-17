@@ -1,10 +1,10 @@
 <?php
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../function.php';
-require_once __DIR__ . '/../botapi.php';
-require_once __DIR__ . '/../panels.php';
-require_once __DIR__ . '/../jdf.php';
-require_once __DIR__ . '/../keyboard.php';
+require_once '../config.php';
+require_once '../function.php';
+require_once '../botapi.php';
+require_once '../panels.php';
+require_once '../jdf.php';
+require_once '../keyboard.php';
 
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Asia/Tehran');
@@ -61,42 +61,7 @@ if (!is_array($data)) {
 }
 
 $data = sanitize_recursive($data);
-
-// Normalise the action key so both `action` and `actions` query params work.
-if (!isset($data['actions']) && isset($data['action'])) {
-    $data['actions'] = $data['action'];
-}
-
-// Extract the bearer token from the headers in a case-insensitive manner.
-$authorizationHeader = null;
-foreach ($headers as $headerName => $headerValue) {
-    if (strcasecmp($headerName, 'Authorization') === 0) {
-        $authorizationHeader = $headerValue;
-        break;
-    }
-}
-
-if ($authorizationHeader === null) {
-    echo json_encode([
-        'status' => false,
-        'msg' => "Authorization header missing",
-        'obj' => []
-    ]);
-    http_response_code(401);
-    return;
-}
-
-if (!preg_match('/Bearer\s+(.*)$/i', $authorizationHeader, $matches)) {
-    echo json_encode([
-        'status' => false,
-        'msg' => "Token invalid",
-        'obj' => []
-    ]);
-    http_response_code(403);
-    return;
-}
-
-$tokencheck = $matches[1];
+$tokencheck = explode('Bearer ', $headers['Authorization'])[1];
 $usercheck = select('user', "*", "id", $data['user_id'], "select");
 if ($usercheck['User_Status'] == "block") {
     echo json_encode([
@@ -117,17 +82,6 @@ if (!$usercheck || $usercheck['token'] != $tokencheck) {
     http_response_code(403);
     return;
 }
-
-if (!isset($data['actions']) || $data['actions'] === null) {
-    echo json_encode([
-        'status' => false,
-        'msg' => "Action not specified",
-        'obj' => []
-    ]);
-    http_response_code(400);
-    return;
-}
-
 switch ($data['actions']) {
     case 'invoices':
         if ($method !== "GET") {
