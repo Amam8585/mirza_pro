@@ -7,7 +7,7 @@ ini_set('max_execution_time', '600');
 $rootPath = filter_input(INPUT_SERVER, 'DOCUMENT_ROOT');
 $PHP_SELF = filter_input(INPUT_SERVER, 'PHP_SELF');
 $Pathfile = dirname(dirname($PHP_SELF, 2));
-$Pathfiles = $rootPath . $Pathfile;
+$Pathfiles = rtrim($rootPath . $Pathfile, '/\\') . '/';
 require_once 'config.php';
 require_once $Pathfiles . 'function.php';
 require_once $Pathfiles . 'config.php';
@@ -23,7 +23,7 @@ $text_bot_var = json_decode(file_get_contents('text.json'), true);
 if (!checktelegramip())
     die("Unauthorized access");
 
-$textbotlang = json_decode(file_get_contents($Pathfiles . '/text.json'), true)['fa'];
+$textbotlang = json_decode(file_get_contents($Pathfiles . 'text.json'), true)['fa'];
 $dataBase = select("botsaz", "*", "bot_token", $ApiToken, "select");
 $admin_ids = json_decode($dataBase['admin_ids']);
 $setting = json_decode($dataBase['setting'], true);
