@@ -430,9 +430,15 @@ class ManagePanel
                             'msg' => $sublist_update['status']
                         );
                     }
-                    $sublist_update = json_decode($sublist_update['body'], true)['updates'][0];
-                    $UsernameData['sub_updated_at'] = $sublist_update['created_at'];
-                    $UsernameData['sub_last_user_agent'] = $sublist_update['user_agent'];
+                    $sublist_update_body = json_decode($sublist_update['body'], true);
+                    if (!empty($sublist_update_body['updates']) && is_array($sublist_update_body['updates'])) {
+                        $first_update = $sublist_update_body['updates'][0];
+                        $UsernameData['sub_updated_at'] = isset($first_update['created_at']) ? $first_update['created_at'] : null;
+                        $UsernameData['sub_last_user_agent'] = isset($first_update['user_agent']) ? $first_update['user_agent'] : null;
+                    } else {
+                        $UsernameData['sub_updated_at'] = isset($UsernameData['sub_updated_at']) ? $UsernameData['sub_updated_at'] : null;
+                        $UsernameData['sub_last_user_agent'] = isset($UsernameData['sub_last_user_agent']) ? $UsernameData['sub_last_user_agent'] : null;
+                    }
                 } else {
                     $UsernameData['expire'] = $UsernameData['expire'];
                 }
@@ -440,7 +446,7 @@ class ManagePanel
                     $UsernameData['subscription_url'] = "https://$domainhosts/sub/" . $inoice['id_invoice'];
                 }
                 if ($new_marzban) {
-                    $UsernameData['proxies'] = $UsernameData['proxy_settings'];
+                    $UsernameData['proxies'] = isset($UsernameData['proxy_settings']) ? $UsernameData['proxy_settings'] : null;
                 }
                 $Output = array(
                     'status' => $UsernameData['status'],
