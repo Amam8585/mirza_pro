@@ -1261,6 +1261,10 @@ $textonebuy
     step("getresidcart", $from_id);
     savedata("clear", "id_order", $randomString);
 } elseif ($user['step'] == "getresidcart") {
+    if (empty($photo)) {
+        sendmessage($from_id, "❌ لطفاً فقط تصویر رسید را ارسال کنید.", null, 'HTML');
+        return;
+    }
     $userdate = json_decode($user['Processing_value'], true);
     $PaymentReport = select("Payment_report", '*', "id_order", $userdate['id_order'], "select");
     $Confirm_pay = json_encode([
