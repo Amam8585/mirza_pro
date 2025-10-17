@@ -564,13 +564,30 @@ switch ($data['actions']) {
                 ));
                 return;
             }
-            $category_remark = select("category", "*", "id", $data['category_id'], "select");
-            $category_remarks = $category_remark == false ? "" : "AND category = '{$category_remark['remark']}'";
+            $category_remark = null;
+            $category_remarks = "";
+            $selected_category_id = isset($data['category_id']) ? $data['category_id'] : null;
+            if (!empty($data['category_id'])) {
+                $category_remark = select("category", "*", "id", $data['category_id'], "select");
+                if (!is_array($category_remark) || !isset($category_remark['remark'])) {
+                    echo json_encode([
+                        'status' => false,
+                        'msg' => "category not found!(invalid category_id)",
+                    ]);
+                    return;
+                }
+                $category_remarks = "AND category = '{$category_remark['remark']}'";
+                $selected_category_id = $category_remark['id'];
+            }
             $time_range_day = $data['time_range_day'] == 0 ? "" : "AND Service_time = '{$data['time_range_day']}'";
             $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = '{$panel['name_panel']}' OR Location = '/all')AND agent= '{$user_info['agent']}' $category_remarks $time_range_day");
             $stmt->execute();
+            $product_list = [];
             while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $hide_panel = json_decode($result['hide_panel'], true);
+                if (!is_array($hide_panel)) {
+                    $hide_panel = [];
+                }
                 if (in_array($panel['name_panel'], $hide_panel)) continue;
                 $stmts2 = $pdo->prepare("SELECT * FROM invoice WHERE Status != 'Unpaid' AND id_user = '{$user_info['id']}'");
                 $stmts2->execute();
@@ -587,7 +604,7 @@ switch ($data['actions']) {
                     'price' => $result['price_product'],
                     'traffic_gb' => $result['Volume_constraint'],
                     'time_days' => intval($result['Service_time']),
-                    'category_id' => $category_remark['id'],
+                    'category_id' => $selected_category_id,
                     'country_id' => $panel['code_panel'],
                     'time_range_id' => $result['Service_time']
 
