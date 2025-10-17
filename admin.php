@@ -7019,8 +7019,15 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
 } elseif (preg_match('/addagentrequest_(\w+)/', $datain, $datagetr)) {
     $id_user = $datagetr[1];
     $request_agent = select("Requestagent", "*", "id", $id_user, "select");
-    update("Requestagent", "status", "accept", "id", $id_user);
-    update("user", "Processing_value", $id_user, "id", $from_id);
+    if (!$request_agent) {
+        telegram('answerCallbackQuery', array(
+            'callback_query_id' => $callback_query_id,
+            'text' => "درخواست مورد نظر یافت نشد.",
+            'show_alert' => true,
+            'cache_time' => 5,
+        ));
+        return;
+    }
     if ($request_agent['status'] == "reject" || $request_agent['status'] == "accept") {
         telegram('answerCallbackQuery', array(
             'callback_query_id' => $callback_query_id,
@@ -7030,34 +7037,90 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         ));
         return;
     }
+    $defaultAgentType = 'n';
+    $agentTypeLabels = [
+        'n' => 'نماینده عادی',
+        'n2' => 'نماینده پیشرفته',
+    ];
+    update("Requestagent", "status", "accept", "id", $id_user);
+    update("Requestagent", "type", $defaultAgentType, "id", $id_user);
+    update("user", "agent", $defaultAgentType, "id", $id_user);
+    update("user", "expire", null, "id", $id_user);
+    sendmessage($id_user, "✅ کاربر گرامی با درخواست نمایندگی شما موافقت و شما نماینده شدید.", null, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['agent']['useragented'], $keyboardadmin, 'HTML');
+    $agentTypeButtons = [];
+    foreach ($agentTypeLabels as $typeCode => $label) {
+        $buttonText = ($typeCode === $defaultAgentType ? "✅ " : "") . $label;
+        $agentTypeButtons[] = [
+            'text' => $buttonText,
+            'callback_data' => "setagenttype_{$typeCode}_{$id_user}"
+        ];
+    }
     $keyboardreject = json_encode([
         'inline_keyboard' => [
             [['text' => "✅درخواست تایید شده.", 'callback_data' => "accept"]],
+            $agentTypeButtons,
             [['text' => "⏱️ زمان انقضا نمایندگی", 'callback_data' => 'expireset_' . $id_user]],
             [['text' => "مدیریت کاربر", 'callback_data' => 'manageuser_' . $id_user]]
         ]
-    ]);
-    sendmessage($from_id, "📌 نوع کاربری را ارسال نمایید.", $backuser, 'HTML');
-    sendmessage($id_user, "✅ کاربر گرامی با درخواست نمایندگی شما موافقت و شما نماینده شدید.", null, 'HTML');
-    $textrequestagent = "📣 یک کاربر درخواست نمایندگی ثبت کرده لطفا اطلاعات را بررسی و وضعیت را مشخص کنید.
-
-آیدی عددی : $id_user
-نام کاربری : {$request_agent['username']} 
-توضیحات :  {$request_agent['Description']} ";
+    ], JSON_UNESCAPED_UNICODE);
+    $textrequestagent = "📣 یک کاربر درخواست نمایندگی ثبت کرده لطفا اطلاعات را بررسی و وضعیت را مشخص کنید.\n\nآیدی عددی : $id_user\nنام کاربری : {$request_agent['username']}\nتوضیحات :  {$request_agent['Description']} ";
+    $textrequestagent .= "\nوضعیت: تایید شد ({$agentTypeLabels[$defaultAgentType]})";
+    $textrequestagent .= "\nبرای تغییر نوع نماینده از دکمه‌های زیر استفاده کنید.";
     Editmessagetext($from_id, $message_id, $textrequestagent, $keyboardreject);
-    step("typeagent", $from_id);
-} elseif ($user['step'] == "typeagent") {
-    $agentst = ["n", "n2"];
-    $text = strtolower($text);
-    if (!in_array($text, $agentst)) {
-        sendmessage($from_id, $textbotlang['Admin']['agent']['invalidtypeagent'], $backadmin, 'HTML');
+    telegram('answerCallbackQuery', array(
+        'callback_query_id' => $callback_query_id,
+        'text' => "درخواست تایید شد و نماینده عادی فعال شد.",
+        'show_alert' => false,
+        'cache_time' => 5,
+    ));
+} elseif (preg_match('/^setagenttype_(n|n2)_(\w+)/', $datain, $datagetr)) {
+    $selectedType = $datagetr[1];
+    $id_user = $datagetr[2];
+    $agentTypeLabels = [
+        'n' => 'نماینده عادی',
+        'n2' => 'نماینده پیشرفته',
+    ];
+    if (!array_key_exists($selectedType, $agentTypeLabels)) {
+        telegram('answerCallbackQuery', array(
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['Admin']['agent']['invalidtypeagent'],
+            'show_alert' => true,
+            'cache_time' => 5,
+        ));
         return;
     }
-    $id_user = $user['Processing_value'];
-    update("user", "agent", $text, "id", $id_user);
-    update("Requestagent", "type", $text, "id", $id_user);
-    step("home", $from_id);
-    sendmessage($from_id, "✅ کاربر با موفقیت نماینده گردید.", $keyboardadmin, 'HTML');
+    update("user", "agent", $selectedType, "id", $id_user);
+    update("Requestagent", "type", $selectedType, "id", $id_user);
+    $request_agent = select("Requestagent", "*", "id", $id_user, "select");
+    if ($request_agent) {
+        $agentTypeButtons = [];
+        foreach ($agentTypeLabels as $typeCode => $label) {
+            $buttonText = ($typeCode === $selectedType ? "✅ " : "") . $label;
+            $agentTypeButtons[] = [
+                'text' => $buttonText,
+                'callback_data' => "setagenttype_{$typeCode}_{$id_user}"
+            ];
+        }
+        $keyboardreject = json_encode([
+            'inline_keyboard' => [
+                [['text' => "✅درخواست تایید شده.", 'callback_data' => "accept"]],
+                $agentTypeButtons,
+                [['text' => "⏱️ زمان انقضا نمایندگی", 'callback_data' => 'expireset_' . $id_user]],
+                [['text' => "مدیریت کاربر", 'callback_data' => 'manageuser_' . $id_user]]
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        $textrequestagent = "📣 یک کاربر درخواست نمایندگی ثبت کرده لطفا اطلاعات را بررسی و وضعیت را مشخص کنید.\n\nآیدی عددی : $id_user\nنام کاربری : {$request_agent['username']}\nتوضیحات :  {$request_agent['Description']} ";
+        $textrequestagent .= "\nوضعیت: تایید شد ({$agentTypeLabels[$selectedType]})";
+        $textrequestagent .= "\nبرای تغییر نوع نماینده از دکمه‌های زیر استفاده کنید.";
+        Editmessagetext($from_id, $message_id, $textrequestagent, $keyboardreject);
+    }
+    telegram('answerCallbackQuery', array(
+        'callback_query_id' => $callback_query_id,
+        'text' => "نوع نماینده به {$agentTypeLabels[$selectedType]} تغییر کرد.",
+        'show_alert' => false,
+        'cache_time' => 5,
+    ));
 } elseif ($datain == "iranpay2setting" && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $trnado, 'HTML');
 } elseif ($datain == "iranpay3setting" && $adminrulecheck['rule'] == "administrator") {
