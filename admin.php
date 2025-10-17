@@ -7528,6 +7528,10 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     }
     update("user", "Processing_value", $userdata['idpanel'], "id", $from_id);
     step("home", $from_id);
+} elseif ($text == "🆕 آپدیت ربات" && $adminrulecheck['rule'] == "administrator") {
+    $textupdate = "💎Version Bot : 5.10.77\n\n📌Version Mini App : 0.1.1 \n📌Version Bot Agent : 0.1.40";
+    sendmessage($from_id, $textupdate, null, 'HTML');
+    step('home', $from_id);
 } elseif ($text == "🛠 قابلیت های پنل") {
     sendmessage($from_id, "🪚 برای استفاده از این قابلیت یکی از پنل های زیر را انتخاب نمایید", $json_list_marzban_panel, 'HTML');
     step('getlocoption', $from_id);
