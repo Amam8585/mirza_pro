@@ -2984,10 +2984,16 @@ $caption";
     step('addchannelid', $from_id);
 } elseif ($user['step'] == "addchannelid") {
     $outputcheck = sendmessage($text, $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
-    if (!$outputcheck['ok']) {
-        $texterror = "❌ اتصال به گروه با موفقیت انجام نشد  
+    if (empty($outputcheck['ok'])) {
+        $errorDescription = 'نامشخص';
+        if (is_array($outputcheck) && isset($outputcheck['description'])) {
+            $errorDescription = $outputcheck['description'];
+        } elseif (is_string($outputcheck) && $outputcheck !== '') {
+            $errorDescription = $outputcheck;
+        }
+        $texterror = "❌ اتصال به گروه با موفقیت انجام نشد
 
-خطای دریافتی :  {$outputcheck['description']}";
+خطای دریافتی :  {$errorDescription}";
         sendmessage($from_id, $texterror, null, 'HTML');
         return;
     }
