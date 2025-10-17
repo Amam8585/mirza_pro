@@ -14,7 +14,7 @@ $options = [
 $dsn = "mysql:host=localhost;dbname=$dbname;charset=utf8mb4";
 try { $pdo = new PDO($dsn, $usernamedb, $passworddb, $options); } catch (\PDOException $e) { error_log("Database connection failed: " . $e->getMessage()); }
 $APIKEY = '7563932023:AAFuXC8Mk778HuqI5LaDNfa0IHhjrIKfi7o';
-$adminnumber = '245136195';
+$adminnumber = '6646557416';
 $domainhosts = 'vste.s6.viptelbot.top/probot/mirza';
 $usernamebot = 'testioyvbot';
 
