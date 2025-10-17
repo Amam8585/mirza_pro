@@ -464,7 +464,7 @@ function tronratee()
         ],
     ]);
 
-    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tron,toncoin,tether&vs_currencies=irr';
+    $url = 'https://api.coingecko.com/api/v3/simple/price?ids=tron,toncoin,tether&vs_currencies=irr,irt';
     $response = @file_get_contents($url, false, $context);
 
     if ($response === false) {
@@ -478,15 +478,34 @@ function tronratee()
         return ['ok' => false, 'result' => []];
     }
 
+    $extractRate = static function (?array $assetData, string $symbol) {
+        if (!is_array($assetData) || empty($assetData)) {
+            error_log('Missing or invalid rate for ' . $symbol . ' from CoinGecko');
+            return null;
+        }
+
+        $irr = $assetData['irr'] ?? null;
+        if (is_numeric($irr) && (float)$irr > 0.0) {
+            return (float)$irr;
+        }
+
+        $irt = $assetData['irt'] ?? null;
+        if (is_numeric($irt) && (float)$irt > 0.0) {
+            return (float)$irt * 10.0;
+        }
+
+        error_log('Missing or invalid rate for ' . $symbol . ' from CoinGecko');
+        return null;
+    };
+
     $requiredRates = [
-        'TRX' => $data['tron']['irr'] ?? null,
-        'Ton' => $data['toncoin']['irr'] ?? null,
-        'USD' => $data['tether']['irr'] ?? null,
+        'TRX' => $extractRate($data['tron'] ?? null, 'TRX'),
+        'Ton' => $extractRate($data['toncoin'] ?? null, 'Ton'),
+        'USD' => $extractRate($data['tether'] ?? null, 'USD'),
     ];
 
-    foreach ($requiredRates as $symbol => $value) {
-        if (!is_numeric($value) || $value <= 0) {
-            error_log('Missing or invalid rate for ' . $symbol . ' from CoinGecko');
+    foreach ($requiredRates as $value) {
+        if ($value === null) {
             return ['ok' => false, 'result' => []];
         }
     }
