@@ -2466,14 +2466,19 @@ $caption";
     } elseif ($type == "score") {
         if ($value == "1") {
             if (isShellExecAvailable()) {
-                $currentCronJobs = runShellCommand('crontab -l 2>/dev/null');
-                $jobToRemove = "*/1 * * * * curl https://$domainhosts/cronbot/lottery.php";
-                $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', (string) $currentCronJobs);
-                $tempCronFile = '/tmp/crontab.txt';
-                file_put_contents($tempCronFile, trim($newCronJobs) . PHP_EOL);
-                runShellCommand('crontab ' . escapeshellarg($tempCronFile));
-                if (file_exists($tempCronFile)) {
-                    unlink($tempCronFile);
+                $crontabBinary = getCrontabBinary();
+                if ($crontabBinary === null) {
+                    error_log('Unable to locate crontab executable; cannot remove lottery cron job.');
+                } else {
+                    $currentCronJobs = runShellCommand(sprintf('%s -l 2>/dev/null', escapeshellarg($crontabBinary)));
+                    $jobToRemove = "*/1 * * * * curl https://$domainhosts/cronbot/lottery.php";
+                    $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', (string) $currentCronJobs);
+                    $tempCronFile = '/tmp/crontab.txt';
+                    file_put_contents($tempCronFile, trim($newCronJobs) . PHP_EOL);
+                    runShellCommand(sprintf('%s %s', escapeshellarg($crontabBinary), escapeshellarg($tempCronFile)));
+                    if (file_exists($tempCronFile)) {
+                        unlink($tempCronFile);
+                    }
                 }
             } else {
                 error_log('Unable to remove lottery cron job because shell_exec is unavailable.');
