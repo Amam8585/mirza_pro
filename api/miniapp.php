@@ -61,7 +61,42 @@ if (!is_array($data)) {
 }
 
 $data = sanitize_recursive($data);
-$tokencheck = explode('Bearer ', $headers['Authorization'])[1];
+
+// Normalise the action key so both `action` and `actions` query params work.
+if (!isset($data['actions']) && isset($data['action'])) {
+    $data['actions'] = $data['action'];
+}
+
+// Extract the bearer token from the headers in a case-insensitive manner.
+$authorizationHeader = null;
+foreach ($headers as $headerName => $headerValue) {
+    if (strcasecmp($headerName, 'Authorization') === 0) {
+        $authorizationHeader = $headerValue;
+        break;
+    }
+}
+
+if ($authorizationHeader === null) {
+    echo json_encode([
+        'status' => false,
+        'msg' => "Authorization header missing",
+        'obj' => []
+    ]);
+    http_response_code(401);
+    return;
+}
+
+if (!preg_match('/Bearer\s+(.*)$/i', $authorizationHeader, $matches)) {
+    echo json_encode([
+        'status' => false,
+        'msg' => "Token invalid",
+        'obj' => []
+    ]);
+    http_response_code(403);
+    return;
+}
+
+$tokencheck = $matches[1];
 $usercheck = select('user', "*", "id", $data['user_id'], "select");
 if ($usercheck['User_Status'] == "block") {
     echo json_encode([
@@ -82,6 +117,17 @@ if (!$usercheck || $usercheck['token'] != $tokencheck) {
     http_response_code(403);
     return;
 }
+
+if (!isset($data['actions']) || $data['actions'] === null) {
+    echo json_encode([
+        'status' => false,
+        'msg' => "Action not specified",
+        'obj' => []
+    ]);
+    http_response_code(400);
+    return;
+}
+
 switch ($data['actions']) {
     case 'invoices':
         if ($method !== "GET") {
