@@ -270,6 +270,7 @@ function step($step, $from_id)
     global $pdo;
     $stmt = $pdo->prepare('UPDATE user SET step = ? WHERE id = ?');
     $stmt->execute([$step, $from_id]);
+    clearSelectCache('user');
 }
 function update($table, $field, $newValue, $whereField = null, $whereValue = null)
 {
@@ -322,10 +323,64 @@ function update($table, $field, $newValue, $whereField = null, $whereValue = nul
     if ($field != "message_count" || $field != "last_message_time") {
         file_put_contents('log.txt', "\n" . $logss, FILE_APPEND);
     }
+
+    clearSelectCache($table);
 }
-function select($table, $field, $whereField = null, $whereValue = null, $type = "select")
+function &getSelectCacheStore()
+{
+    static $store = [
+        'results' => [],
+        'tableIndex' => [],
+    ];
+
+    return $store;
+}
+
+function clearSelectCache($table = null)
+{
+    $store =& getSelectCacheStore();
+
+    if ($table === null) {
+        $store['results'] = [];
+        $store['tableIndex'] = [];
+        return;
+    }
+
+    if (!isset($store['tableIndex'][$table])) {
+        return;
+    }
+
+    foreach (array_keys($store['tableIndex'][$table]) as $cacheKey) {
+        unset($store['results'][$cacheKey]);
+    }
+
+    unset($store['tableIndex'][$table]);
+}
+
+function select($table, $field, $whereField = null, $whereValue = null, $type = "select", $options = [])
 {
     global $pdo;
+
+    $useCache = true;
+    if (is_array($options) && array_key_exists('cache', $options)) {
+        $useCache = (bool) $options['cache'];
+    }
+
+    $cacheKey = null;
+    if ($useCache) {
+        $cacheKey = hash('sha256', json_encode([
+            $table,
+            $field,
+            $whereField,
+            $whereValue,
+            $type,
+        ], JSON_UNESCAPED_UNICODE));
+
+        $store =& getSelectCacheStore();
+        if (isset($store['results'][$cacheKey])) {
+            return $store['results'][$cacheKey];
+        }
+    }
 
     $query = "SELECT $field FROM $table";
 
@@ -334,7 +389,6 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
     }
 
     try {
-
         $stmt = $pdo->prepare($query);
         if ($whereField !== null) {
             $stmt->bindParam(':whereValue', $whereValue, PDO::PARAM_STR);
@@ -342,7 +396,7 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
 
         $stmt->execute();
         if ($type == "count") {
-            return $stmt->rowCount();
+            $result = $stmt->rowCount();
         } elseif ($type == "FETCH_COLUMN") {
             $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
             if ($table === 'admin' && $field === 'id_admin') {
@@ -359,17 +413,28 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
                     $results[] = (string) $adminnumber;
                 }
             }
-            return $results;
+            $result = $results;
         } elseif ($type == "fetchAll") {
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
         } else {
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result === false ? null : $result;
+            $fetched = $stmt->fetch(PDO::FETCH_ASSOC);
+            $result = $fetched === false ? null : $fetched;
         }
     } catch (PDOException $e) {
         error_log($e->getMessage());
         die("Query failed: " . $e->getMessage());
     }
+
+    if ($useCache && $cacheKey !== null) {
+        $store =& getSelectCacheStore();
+        $store['results'][$cacheKey] = $result;
+        if (!isset($store['tableIndex'][$table])) {
+            $store['tableIndex'][$table] = [];
+        }
+        $store['tableIndex'][$table][$cacheKey] = true;
+    }
+
+    return $result;
 }
 
 function getPaySettingValue($name, $default = null)
