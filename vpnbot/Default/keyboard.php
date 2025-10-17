@@ -175,8 +175,8 @@ function KeyboardProduct($location, $query, $pricediscount, $datakeyboard, $stat
     $stmt->execute();
     $valuetow = $valuetow != null ? "-$valuetow" : "";
     while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $productlist = json_decode(file_get_contents('product.json'), true);
-        $productlist_name = json_decode(file_get_contents('product_name.json'), true);
+        $productlist = readJsonFileIfExists('product.json');
+        $productlist_name = readJsonFileIfExists('product_name.json');
         if (isset($productlist[$result['code_product']])) $result['price_product'] = $productlist[$result['code_product']];
         $result['name_product'] = empty($productlist_name[$result['code_product']]) ? $result['name_product'] : $productlist_name[$result['code_product']];
         $hide_panel = json_decode($result['hide_panel'], true);

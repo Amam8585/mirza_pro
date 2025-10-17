@@ -609,26 +609,29 @@ class ManagePanel
                     'msg' => $UsernameData['message']
                 );
             } else {
-                if ($UsernameData['start_date'] == null) {
+                $startDate = $UsernameData['start_date'] ?? null;
+                if ($startDate === null) {
                     $date = 0;
                 } else {
-                    $current_date = time();
-                    $start_date = strtotime($UsernameData['start_date']);
-                    $end_date = $start_date + ($UsernameData['package_days'] * 86400);
+                    $start_date = strtotime($startDate);
+                    $package_days = isset($UsernameData['package_days']) ? intval($UsernameData['package_days']) : 0;
+                    $end_date = $start_date + ($package_days * 86400);
                     $date = strtotime(date("Y-m-d H:i:s", $end_date));
                 }
-                $UsernameData['usage_limit_GB'] = $UsernameData['usage_limit_GB'] * pow(1024, 3);
-                $UsernameData['current_usage_GB'] = $UsernameData['current_usage_GB'] * pow(1024, 3);
-                $linksuburl = "{$Get_Data_Panel['linksubx']}/{$UsernameData['uuid']}/";
-                $linksubconfig = $linksuburl . "sub";
-                if ($UsernameData['last_online'] == "1-01-01 00:00:00") {
-                    $UsernameData['last_online'] = null;
+                $usageLimit = isset($UsernameData['usage_limit_GB']) ? $UsernameData['usage_limit_GB'] * pow(1024, 3) : 0;
+                $currentUsage = isset($UsernameData['current_usage_GB']) ? $UsernameData['current_usage_GB'] * pow(1024, 3) : 0;
+                $uuid = $UsernameData['uuid'] ?? null;
+                $linksuburl = $uuid ? "{$Get_Data_Panel['linksubx']}/{$uuid}/" : $Get_Data_Panel['linksubx'];
+                $lastOnline = $UsernameData['last_online'] ?? null;
+                if ($lastOnline == "1-01-01 00:00:00") {
+                    $lastOnline = null;
                 }
-                if ($UsernameData['usage_limit_GB'] - $UsernameData['current_usage_GB'] <= 0) {
+                $remainingTraffic = $usageLimit - $currentUsage;
+                if ($usageLimit > 0 && $remainingTraffic <= 0) {
                     $status = "limited";
-                } elseif ($date - time() <= 0 and $date != 0) {
+                } elseif ($date != 0 && ($date - time()) <= 0) {
                     $status = "expired";
-                } elseif ($UsernameData['start_date'] == null) {
+                } elseif ($startDate === null) {
                     $status = "on_hold";
                 } else {
                     $status = "active";
@@ -638,11 +641,11 @@ class ManagePanel
                 }
                 $Output = array(
                     'status' => $status,
-                    'username' => $UsernameData['name'],
-                    'data_limit' => $UsernameData['usage_limit_GB'],
+                    'username' => $UsernameData['name'] ?? ($UsernameData['email'] ?? $username),
+                    'data_limit' => $usageLimit,
                     'expire' => $date,
-                    'online_at' => $UsernameData['last_online'],
-                    'used_traffic' => $UsernameData['current_usage_GB'],
+                    'online_at' => $lastOnline,
+                    'used_traffic' => $currentUsage,
                     'links' => [],
                     'subscription_url' => $linksuburl,
                     'sub_updated_at' => null,
