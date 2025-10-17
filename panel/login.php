@@ -2,9 +2,9 @@
 ini_set('session.cookie_httponly', true);
 session_start();
 session_regenerate_id(true);
-require_once '../config.php';
-require_once '../function.php';
-require_once '../botapi.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../function.php';
+require_once __DIR__ . '/../botapi.php';
 $allowed_ips = select("setting","*",null,null,"select");
 
 $user_ip = $_SERVER['REMOTE_ADDR'];

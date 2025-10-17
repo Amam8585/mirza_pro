@@ -1,11 +1,11 @@
 <?php
 ini_set('error_log', 'error_log');
 date_default_timezone_set('Asia/Tehran');
-require_once '../config.php';
-require_once '../botapi.php';
-require_once '../function.php';
-require '../vendor/autoload.php';
-require_once '../jdf.php';
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../botapi.php';
+require_once __DIR__ . '/../function.php';
+require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../jdf.php';
 $setting = select("setting", "*");
 $midnight_time = date("H:i");
 if(intval($setting['scorestatus']) == 1){
