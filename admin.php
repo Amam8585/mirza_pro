@@ -69,13 +69,46 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         return;
     }
     $userdata = json_decode($user['Processing_value'], true);
+    if (!is_array($userdata)) {
+        $userdata = [];
+    }
+
+    $remark = isset($userdata['remark']) ? (string) $userdata['remark'] : '';
+    $link = isset($userdata['link']) ? (string) $userdata['link'] : '';
+
     sendmessage($from_id, "✅ کانال جوین اجباری با موفقیت ثبت گردید.", $channelkeyboard, 'HTML');
     step('home', $from_id);
-    $stmt = $pdo->prepare("INSERT INTO channels (link,remark,linkjoin) VALUES (:link,:remark,:linkjoin)");
-    $stmt->bindParam(':remark', $userdata['remark'], PDO::PARAM_STR);
-    $stmt->bindParam(':link', $userdata['link'], PDO::PARAM_STR);
-    $stmt->bindParam(':linkjoin', $text, PDO::PARAM_STR);
-    $stmt->execute();
+
+    $insertChannel = function ($remarkValue) use ($pdo, $link, $text) {
+        $stmt = $pdo->prepare("INSERT INTO channels (link, remark, linkjoin) VALUES (:link, :remark, :linkjoin)");
+        $stmt->bindValue(':remark', $remarkValue, PDO::PARAM_STR);
+        $stmt->bindValue(':link', $link, PDO::PARAM_STR);
+        $stmt->bindValue(':linkjoin', $text, PDO::PARAM_STR);
+        $stmt->execute();
+    };
+
+    try {
+        $insertChannel($remark);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Incorrect string value') !== false) {
+            ensureTableUtf8mb4('channels');
+            try {
+                $insertChannel($remark);
+            } catch (PDOException $retryException) {
+                if (strpos($retryException->getMessage(), 'Incorrect string value') === false) {
+                    throw $retryException;
+                }
+
+                $sanitisedRemark = is_string($remark) ? @iconv('UTF-8', 'UTF-8//IGNORE', $remark) : '';
+                if ($sanitisedRemark === false) {
+                    $sanitisedRemark = '';
+                }
+                $insertChannel($sanitisedRemark);
+            }
+        } else {
+            throw $e;
+        }
+    }
 } elseif ($text == $textbotlang['Admin']['channel']['removechannelbtn'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['channel']['removechannel'], $list_channels_joins, 'HTML');
     step('removechannel', $from_id);
@@ -7717,7 +7750,7 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     $arzireyali3 = getPaySettingValue('statusiranpay3', 'offiranpay3');
     $aqayepardakht = getPaySettingValue('statusaqayepardakht', 'offaqayepardakht');
     $zarinpal = getPaySettingValue('zarinpalstatus', 'offzarinpal');
-    $affilnecurrency = getPaySettingValue('digistatus', 'offdigistatus');
+    $affilnecurrency = getPaySettingValue('digistatus', 'offdigi');
     $paymentstatussnotverify = getPaySettingValue('paymentstatussnotverify', 'offpaymentstatus');
     $paymentsstartelegram = getPaySettingValue('statusstar', '0');
     $payment_status_nowpayment = getPaySettingValue('statusnowpayment', '0');
@@ -7934,17 +7967,17 @@ n2", $backadmin, 'HTML');
         }
         update("PaySetting", "ValuePay", $valuenew, "NamePay", "statusnowpayment");
     }
-    $zarinpal = select("PaySetting", "ValuePay", "NamePay", "zarinpalstatus", "select")['ValuePay'];
-    $cartotcart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select")['ValuePay'];
-    $plisio = select("PaySetting", "ValuePay", "NamePay", "nowpaymentstatus", "select")['ValuePay'];
-    $arzireyali1 = select("PaySetting", "ValuePay", "NamePay", "statusSwapWallet", "select")['ValuePay'];
-    $arzireyali2 = select("PaySetting", "ValuePay", "NamePay", "statustarnado", "select")['ValuePay'];
-    $aqayepardakht = select("PaySetting", "ValuePay", "NamePay", "statusaqayepardakht", "select")['ValuePay'];
-    $affilnecurrency = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select")['ValuePay'];
-    $arzireyali3 = select("PaySetting", "ValuePay", "NamePay", "statusiranpay3", "select")['ValuePay'];
-    $paymentstatussnotverify = select("PaySetting", "ValuePay", "NamePay", "paymentstatussnotverify", "select")['ValuePay'];
-    $paymentsstartelegram = select("PaySetting", "ValuePay", "NamePay", "statusstar", "select")['ValuePay'];
-    $payment_status_nowpayment = select("PaySetting", "ValuePay", "NamePay", "statusnowpayment", "select")['ValuePay'];
+    $zarinpal = getPaySettingValue('zarinpalstatus', 'offzarinpal');
+    $cartotcart = getPaySettingValue('Cartstatus', 'offcard');
+    $plisio = getPaySettingValue('nowpaymentstatus', 'offnowpayment');
+    $arzireyali1 = getPaySettingValue('statusSwapWallet', 'offSwapinoBot');
+    $arzireyali2 = getPaySettingValue('statustarnado', 'offternado');
+    $aqayepardakht = getPaySettingValue('statusaqayepardakht', 'offaqayepardakht');
+    $affilnecurrency = getPaySettingValue('digistatus', 'offdigi');
+    $arzireyali3 = getPaySettingValue('statusiranpay3', 'offiranpay3');
+    $paymentstatussnotverify = getPaySettingValue('paymentstatussnotverify', 'offpaymentstatus');
+    $paymentsstartelegram = getPaySettingValue('statusstar', '0');
+    $payment_status_nowpayment = getPaySettingValue('statusnowpayment', '0');
     $cartotcartstatus = [
         'oncard' => $textbotlang['Admin']['Status']['statuson'],
         'offcard' => $textbotlang['Admin']['Status']['statusoff']
