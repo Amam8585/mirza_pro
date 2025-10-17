@@ -4049,11 +4049,18 @@ $text_expie_agent
     update("user", "Processing_value", $text, "id", $from_id);
     step('getnamecard', $from_id);
 } elseif ($user['step'] == "getnamecard") {
-    sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['Savacard'], $CartManage, 'HTML');
-    $stmt = $connect->prepare("INSERT INTO card_number (cardnumber,namecard) VALUES (?,?)");
-    $stmt->bind_param("ss", $user['Processing_value'], $text);
-    $stmt->execute();
-    step('home', $from_id);
+    try {
+        $stmt = $connect->prepare("INSERT INTO card_number (cardnumber,namecard) VALUES (?,?)");
+        $stmt->bind_param("ss", $user['Processing_value'], $text);
+        $stmt->execute();
+        $stmt->close();
+        sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['Savacard'], $CartManage, 'HTML');
+        step('home', $from_id);
+    } catch (\mysqli_sql_exception $e) {
+        error_log('Failed to save card number: ' . $e->getMessage());
+        sendmessage($from_id, "❌ ثبت شماره کارت ناموفق بود. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.", $backadmin, 'HTML');
+        step('home', $from_id);
+    }
 } elseif ($datain == "plisiosetting" && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $NowPaymentsManage, 'HTML');
 } elseif ($text == "🧩 api plisio" && $adminrulecheck['rule'] == "administrator") {
@@ -10332,7 +10339,9 @@ if (isset($update["inline_query"])) {
     if (is_dir($dirsource) && !deleteDirectory($dirsource)) {
         error_log('Failed to remove bot directory: ' . $dirsource);
     }
-    file_get_contents("https://api.telegram.org/bot{$contentbto['bot_toekn']}/deletewebhook");
+    if (!empty($contentbto['bot_token'])) {
+        file_get_contents("https://api.telegram.org/bot{$contentbto['bot_token']}/deletewebhook");
+    }
     $stmt = $pdo->prepare("DELETE FROM botsaz WHERE id_user = :id_user");
     $stmt->bindParam(':id_user', $id_user, PDO::PARAM_STR);
     $stmt->execute();

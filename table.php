@@ -1185,10 +1185,21 @@ try {
         $result = $connect->query("CREATE TABLE card_number (
         cardnumber varchar(500) PRIMARY KEY,
         namecard  varchar(1000)  NOT NULL)
-        ");
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         if (!$result) {
             echo "table x_ui" . mysqli_error($connect);
         }
+    }
+    $columnInfo = $connect->query("SHOW FULL COLUMNS FROM card_number LIKE 'namecard'");
+    if ($columnInfo) {
+        $column = $columnInfo->fetch_assoc();
+        $currentCollation = $column['Collation'] ?? '';
+        if (empty($currentCollation) || stripos($currentCollation, 'utf8mb4') === false) {
+            $connect->query("ALTER TABLE card_number CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $connect->query("ALTER TABLE card_number MODIFY cardnumber varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci PRIMARY KEY");
+            $connect->query("ALTER TABLE card_number MODIFY namecard varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
+        }
+        $columnInfo->free();
     }
 } catch (Exception $e) {
     file_put_contents('error_log card_number', $e->getMessage());

@@ -726,7 +726,9 @@ switch ($data['actions'] ?? '') {
         if (is_dir($dirsource) && !deleteDirectory($dirsource)) {
             error_log('Failed to remove bot directory: ' . $dirsource);
         }
-        file_get_contents("https://api.telegram.org/bot{$contentbot['bot_toekn']}/deletewebhook");
+        if (!empty($contentbot['bot_token'])) {
+            file_get_contents("https://api.telegram.org/bot{$contentbot['bot_token']}/deletewebhook");
+        }
         $stmt = $pdo->prepare("DELETE FROM botsaz WHERE id_user = :id_user");
         $stmt->bindParam(':id_user', $data['chat_id'], PDO::PARAM_STR);
         $stmt->execute();
