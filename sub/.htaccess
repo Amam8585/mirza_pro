@@ -1,4 +1,36 @@
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <LimitExcept GET POST HEAD OPTIONS>
+        Require all denied
+    </LimitExcept>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <LimitExcept GET POST HEAD OPTIONS>
+        Order deny,allow
+        Deny from all
+    </LimitExcept>
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(env|ini|log|bak|sql|sh|config|yml|yaml|lock|txt|json)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(?i)\.(env|ini|log|bak|sql|sh|config|yml|yaml|lock|txt|json)$">
+        Order deny,allow
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\." - [F]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+</IfModule>

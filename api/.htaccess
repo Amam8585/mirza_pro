@@ -1,14 +1,42 @@
-RewriteEngine On
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
 
+<IfModule mod_authz_core.c>
+    <LimitExcept GET POST OPTIONS>
+        Require all denied
+    </LimitExcept>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <LimitExcept GET POST OPTIONS>
+        Order deny,allow
+        Deny from all
+    </LimitExcept>
+</IfModule>
 
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(env|ini|log|bak|sql|sh|config|yml|yaml|lock|txt|json)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(?i)\.(env|ini|log|bak|sql|sh|config|yml|yaml|lock|txt|json)$">
+        Order deny,allow
+        Deny from all
+    </FilesMatch>
+</IfModule>
 
-RewriteCond %{REQUEST_FILENAME}.php -f
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\." - [F]
 
-RewriteRule ^([^/]+)$ $1.php [L]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^([^/]+)$ $1.php [L]
 
-RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
+    RewriteCond %{THE_REQUEST} \s/+(.+?)\.php[\s?] [NC]
+    RewriteRule ^ /%1 [R=301,L]
+</IfModule>
 
-RewriteRule ^ /%1 [R=301,L]
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1

@@ -1,6 +1,21 @@
-<Files "*.txt">
-    Require all denied
-</Files>
-<Files "*.json">
-    Require all denied
-</Files>
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Prevent access to hidden files like .env or .gitignore
+    RewriteRule "(^|/)\." - [F]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(env|ini|log|bak|sql|sh|config|yml|yaml|lock|txt|json)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(?i)\.(env|ini|log|bak|sql|sh|config|yml|yaml|lock|txt|json)$">
+        Order deny,allow
+        Deny from all
+    </FilesMatch>
+</IfModule>
