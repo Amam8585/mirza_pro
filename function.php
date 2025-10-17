@@ -1305,26 +1305,42 @@ function isClientIpInRange($clientIp, $lowerBound, $upperBound)
 }
 function addCronIfNotExists($cronCommand)
 {
+    $commands = is_array($cronCommand) ? $cronCommand : [$cronCommand];
+    $commands = array_values(array_filter(array_map('trim', $commands), static function ($command) {
+        return $command !== '';
+    }));
+
+    if (empty($commands)) {
+        return true;
+    }
+
+    $logContext = implode('; ', $commands);
+
     if (!isShellExecAvailable()) {
-        error_log('shell_exec is not available; unable to register cron job: ' . $cronCommand);
+        error_log('shell_exec is not available; unable to register cron job(s): ' . $logContext);
         return false;
     }
 
     $existingCronJobs = runShellCommand('crontab -l 2>/dev/null');
-    if ($existingCronJobs === null) {
-        $existingCronJobs = '';
+    $existingCronJobs = trim((string) $existingCronJobs);
+    $cronLines = $existingCronJobs === '' ? [] : preg_split('/\r?\n/', $existingCronJobs);
+    $cronLines = array_values(array_filter(array_map('trim', $cronLines), static function ($line) {
+        return $line !== '' && strpos($line, '#') !== 0;
+    }));
+
+    $newLineAdded = false;
+    foreach ($commands as $command) {
+        if (!in_array($command, $cronLines, true)) {
+            $cronLines[] = $command;
+            $newLineAdded = true;
+        }
     }
 
-    $cronLines = preg_split('/\r?\n/', trim($existingCronJobs));
-    $cronLines = array_filter(array_map('trim', $cronLines), function ($line) {
-        return $line !== '' && strpos($line, '#') !== 0;
-    });
-
-    if (in_array($cronCommand, $cronLines, true)) {
+    if (!$newLineAdded) {
         return true;
     }
 
-    $cronLines[] = $cronCommand;
+    $cronLines = array_values(array_unique($cronLines));
     $cronContent = implode(PHP_EOL, $cronLines) . PHP_EOL;
 
     $temporaryFile = tempnam(sys_get_temp_dir(), 'cron');
@@ -1333,7 +1349,12 @@ function addCronIfNotExists($cronCommand)
         return false;
     }
 
-    file_put_contents($temporaryFile, $cronContent);
+    if (file_put_contents($temporaryFile, $cronContent) === false) {
+        error_log('Unable to write cron configuration to temporary file: ' . $temporaryFile);
+        unlink($temporaryFile);
+        return false;
+    }
+
     runShellCommand('crontab ' . escapeshellarg($temporaryFile));
     unlink($temporaryFile);
 
@@ -1344,22 +1365,26 @@ function activecron()
 {
     global $domainhosts;
 
-    addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/statusday.php");
-    addCronIfNotExists("*/1 * * * * curl https://$domainhosts/cronbot/croncard.php");
-    addCronIfNotExists("*/1 * * * * curl https://$domainhosts/cronbot/NoticationsService.php");
-    addCronIfNotExists("*/5 * * * * curl https://$domainhosts/cronbot/payment_expire.php");
-    addCronIfNotExists("*/1 * * * * curl https://$domainhosts/cronbot/sendmessage.php");
-    addCronIfNotExists("*/3 * * * * curl https://$domainhosts/cronbot/plisio.php");
-    addCronIfNotExists("*/1 * * * * curl https://$domainhosts/cronbot/activeconfig.php");
-    addCronIfNotExists("*/1 * * * * curl https://$domainhosts/cronbot/disableconfig.php");
-    addCronIfNotExists("*/1 * * * * curl https://$domainhosts/cronbot/iranpay1.php");
-    addCronIfNotExists("0 */5 * * * curl https://$domainhosts/cronbot/backupbot.php");
-    addCronIfNotExists("*/2 * * * * curl https://$domainhosts/cronbot/gift.php");
-    addCronIfNotExists("*/30 * * * * curl https://$domainhosts/cronbot/expireagent.php");
-    addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/on_hold.php");
-    addCronIfNotExists("*/2 * * * * curl https://$domainhosts/cronbot/configtest.php");
-    addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/uptime_node.php");
-    addCronIfNotExists("*/15 * * * * curl https://$domainhosts/cronbot/uptime_panel.php");
+    $cronCommands = [
+        "*/15 * * * * curl https://$domainhosts/cronbot/statusday.php",
+        "*/1 * * * * curl https://$domainhosts/cronbot/croncard.php",
+        "*/1 * * * * curl https://$domainhosts/cronbot/NoticationsService.php",
+        "*/5 * * * * curl https://$domainhosts/cronbot/payment_expire.php",
+        "*/1 * * * * curl https://$domainhosts/cronbot/sendmessage.php",
+        "*/3 * * * * curl https://$domainhosts/cronbot/plisio.php",
+        "*/1 * * * * curl https://$domainhosts/cronbot/activeconfig.php",
+        "*/1 * * * * curl https://$domainhosts/cronbot/disableconfig.php",
+        "*/1 * * * * curl https://$domainhosts/cronbot/iranpay1.php",
+        "0 */5 * * * curl https://$domainhosts/cronbot/backupbot.php",
+        "*/2 * * * * curl https://$domainhosts/cronbot/gift.php",
+        "*/30 * * * * curl https://$domainhosts/cronbot/expireagent.php",
+        "*/15 * * * * curl https://$domainhosts/cronbot/on_hold.php",
+        "*/2 * * * * curl https://$domainhosts/cronbot/configtest.php",
+        "*/15 * * * * curl https://$domainhosts/cronbot/uptime_node.php",
+        "*/15 * * * * curl https://$domainhosts/cronbot/uptime_panel.php",
+    ];
+
+    addCronIfNotExists($cronCommands);
 }
 
 function inlineFixer($str, int $count_button = 1)
