@@ -4050,6 +4050,10 @@ $text_expie_agent
     step('getnamecard', $from_id);
 } elseif ($user['step'] == "getnamecard") {
     try {
+        if (function_exists('ensureCardNumberTableSupportsUnicode')) {
+            ensureCardNumberTableSupportsUnicode();
+        }
+
         $stmt = $connect->prepare("INSERT INTO card_number (cardnumber,namecard) VALUES (?,?)");
         $stmt->bind_param("ss", $user['Processing_value'], $text);
         $stmt->execute();
@@ -4058,6 +4062,9 @@ $text_expie_agent
         step('home', $from_id);
     } catch (\mysqli_sql_exception $e) {
         error_log('Failed to save card number: ' . $e->getMessage());
+        if (stripos($e->getMessage(), 'Incorrect string value') !== false) {
+            error_log('card_number insert failed due to charset mismatch. Please verify the table collation.');
+        }
         sendmessage($from_id, "❌ ثبت شماره کارت ناموفق بود. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.", $backadmin, 'HTML');
         step('home', $from_id);
     }
