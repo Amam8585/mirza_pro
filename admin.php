@@ -4163,9 +4163,15 @@ $text_expie_agent
         if (isset($Check_token['access_token'])) {
             $System_Stats = Get_System_Stats($text);
             if ($new_marzban) {
-                $active_users = $System_Stats['active_users'];
+                $active_users = $System_Stats['active_users']
+                    ?? $System_Stats['users_active']
+                    ?? $System_Stats['online_users']
+                    ?? 0;
             } else {
-                $active_users = $System_Stats['users_active'];
+                $active_users = $System_Stats['users_active']
+                    ?? $System_Stats['active_users']
+                    ?? $System_Stats['online_users']
+                    ?? 0;
             }
             $total_user = $System_Stats['total_user'];
             $mem_total = formatBytes($System_Stats['mem_total']);
