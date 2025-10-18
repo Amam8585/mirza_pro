@@ -1,6 +1,7 @@
 <?php
 #----------------[  admin section  ]------------------#
 $textadmin = ["panel", "/panel", $textbotlang['Admin']['textpaneladmin']];
+$text_panel_admin_login_base64 = '8J+SjiB8IFZlcnNpb24gQm90OiAlcwrwn5OMIHwgVmVyc2lvbiBNaW5pIEFwcDogJXMKCjxibG9ja3F1b3RlPjxiPgrwn5S5IHwg2KfbjNmGINix2KjYp9iqINqp2KfZhdmE2KfZiyDYsdin24zar9in2YYg2KfYs9iqINmIINiq2YjYs9i3INiq2YjYs9i52YfigIzYr9mH2YbYr9mHCjxhIGhyZWY9Imh0dHBzOi8vZ2l0aHViLmNvbS9tYWhkaU1HRjIiIHJlbD0ibm9mb2xsb3ciIHRhcmdldD0iX2JsYW5rIj7ZhduM2LHYstinPC9hPiDYudix2LbZhyDYtNiv2Ycg2YgKPGEgaHJlZj0iaHR0cHM6Ly90Lm1lL0x1bWVUZWFtIiByZWw9Im5vZm9sbG93IiB0YXJnZXQ9Il9ibGFuayI+THVtZTwvYT4g2KLZhiDYsdinINin2LHYqtmC2Kcg2K/Yp9iv2Ycg2KfYs9iqLgoK8J+UuSB8INmH2LHar9mI2YbZhyDZgdix2YjYtCDbjNinINiv2LHbjNin2YHYqiDZiNis2Ycg2KjYp9io2Kog2KfbjNmGINix2KjYp9iqINiq2K7ZhNmBINmF2K3Ys9mI2Kgg2YXbjOKAjNi02YjYry4KCvCflLkgfCDYr9ixINi12YjYsdiqINmF2LTYp9mH2K/Zh9mUINmB2LHZiNi0INuM2Kcg2K/YsduM2KfZgdiqINmI2KzZh9iMINmE2LfZgdin2Ysg2YjYrNmHINiu2YjYryDYsdinINm+24zar9uM2LHbjCDaqdix2K/ZhyDZiCDYqNin2LLZvtiz4oCM2q/bjNix24wg2YbZhdin24zbjNivLgo8L2I+PC9ibG9ja3F1b3RlPgoKPGJsb2NrcXVvdGU+PGI+CvCfkJ4gfCDYp9qv2LEg2K/YsSDYudmF2YTaqdix2K8g2LHYqNin2Kog2KjYpyDYqNin2q8g24zYpyDZhdi02qnZhNuMINmF2YjYp9is2Ycg2LTYr9uM2K/YjCDYp9iyINi32LHbjNmCINiv2qnZhdmH2ZQg2q/Ystin2LHYtCDYsdio2KfYqiDYr9ixINm+2YbZhCDYp9iv2YXbjNmGINio2Kcg2YXYpyDYr9ixINin2LHYqtio2KfYtyDYqNin2LTbjNivLgo8L2I+PC9ibG9ja3F1b3RlPg==';
 if (!in_array($from_id, $admin_ids))
     return;
 if (in_array($text, $textadmin) || $datain == "admin") {
@@ -11,9 +12,9 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         return;
     }
     $version_mini_app = file_get_contents('app/version');
-    $version_Bot_Agent = file_get_contents('vpnbot/update/version');
     activecron();
-    $text_admin = sprintf($textbotlang['Admin']['TextPanelAdminLogin'], $version, $version_mini_app, $version_Bot_Agent);
+    $text_admin_template = base64_decode($text_panel_admin_login_base64);
+    $text_admin = sprintf($text_admin_template, $version, $version_mini_app);
     $how_active_mini_app = "📌 آموزش فعالسازی مینی اپ در ربات BotFather
 
 /mybots > Select Bot > Bot Setting >  Configure Mini App > Enable Mini App  > Edit Mini App URL
@@ -30,8 +31,8 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         return;
     }
     $version_mini_app = file_get_contents('app/version');
-    $version_Bot_Agent = file_get_contents('vpnbot/update/version');
-    $text_admin = sprintf($textbotlang['Admin']['TextPanelAdminLogin'], $version, $version_mini_app, $version_Bot_Agent);
+    $text_admin_template = base64_decode($text_panel_admin_login_base64);
+    $text_admin = sprintf($text_admin_template, $version, $version_mini_app);
     sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
     step('home', $from_id);
     return;
@@ -7529,7 +7530,7 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     update("user", "Processing_value", $userdata['idpanel'], "id", $from_id);
     step("home", $from_id);
 } elseif ($text == "🆕 آپدیت ربات" && $adminrulecheck['rule'] == "administrator") {
-    $textupdate = "💎Version Bot : 5.10.77\n\n📌Version Mini App : 0.1.1 \n📌Version Bot Agent : 0.1.40";
+    $textupdate = "💎 | Version Bot: 5.10.77\n📌 | Version Mini App: 0.1.1\n\n<blockquote><b>\n🔹 | این ربات کاملاً رایگان است و توسط توسعه‌دهنده\n<a href=\"https://github.com/mahdiMGF2\" rel=\"nofollow\" target=\"_blank\">میرزا</a> عرضه شده و\n<a href=\"https://t.me/LumeTeam\" rel=\"nofollow\" target=\"_blank\">Lume</a> آن را ارتقا داده است.\n\n🔹 | هرگونه فروش یا دریافت وجه بابت این ربات تخلف محسوب می‌شود.\n\n🔹 | در صورت مشاهدهٔ فروش یا دریافت وجه، لطفاً وجه خود را پیگیری کرده و بازپس‌گیری نمایید.\n</b></blockquote>\n\n<blockquote><b>\n🐞 | اگر در عملکرد ربات با باگ یا مشکلی مواجه شدید، از طریق دکمهٔ گزارش ربات در پنل ادمین با ما در ارتباط باشید.\n</b></blockquote>";
     sendmessage($from_id, $textupdate, null, 'HTML');
     step('home', $from_id);
 } elseif ($text == "🛠 قابلیت های پنل") {
