@@ -123,7 +123,12 @@ if (in_array($text, $textadmin) || $datain == "admin") {
     sendmessage($from_id, $textbotlang['Admin']['manageadmin']['getid'], $backadmin, 'HTML');
     step('addadmin', $from_id);
 } elseif ($user['step'] == "addadmin") {
-    update("user", "Processing_value", $text, "id", $from_id);
+    $adminId = trim($text);
+    if ($adminId === '') {
+        sendmessage($from_id, $textbotlang['Admin']['manageadmin']['getid'], $backadmin, 'HTML');
+        return;
+    }
+    update("user", "Processing_value", $adminId, "id", $from_id);
     sendmessage($from_id, $textbotlang['Admin']['manageadmin']['setrule'], $adminrule, 'HTML');
     step('getrule', $from_id);
 } elseif ($user['step'] == "getrule") {
@@ -3243,9 +3248,13 @@ $caption";
     $list_admin = select("admin", "*", null, null, "fetchAll");
     $keyboardadmin = ['inline_keyboard' => []];
     foreach ($list_admin as $admin) {
+        $adminId = isset($admin['id_admin']) ? trim($admin['id_admin']) : '';
+        if ($adminId === '') {
+            continue;
+        }
         $keyboardadmin['inline_keyboard'][] = [
-            ['text' => "❌", 'callback_data' => "removeadmin_" . $admin['id_admin']],
-            ['text' => $admin['id_admin'], 'callback_data' => "adminlist"],
+            ['text' => "❌", 'callback_data' => "removeadmin_" . $adminId],
+            ['text' => $adminId, 'callback_data' => "adminlist"],
         ];
     }
     $keyboardadmin['inline_keyboard'][] = [
@@ -9519,14 +9528,19 @@ f,n.n2", $backadmin, 'HTML');
     update("user", "Balance", "0", "id", $iduser);
     sendmessage($from_id, "موجودی کاربر به مبلغ {$userdata['Balance']} صفر گردید", $keyboardadmin, 'HTML');
 } elseif (preg_match('/removeadmin_(\w+)/', $datain, $dataget) && $adminrulecheck['rule'] == "administrator") {
-    $idadmin = $dataget[1];
-    if ($idadmin == $adminnumber) {
+    $idadmin = trim($dataget[1]);
+    $mainAdminId = trim((string) $adminnumber);
+    if ($idadmin === $mainAdminId) {
         sendmessage($from_id, "❌ امکان حذف ادمین اصلی وجود ندارد", null, 'HTML');
         return;
     }
-    $stmt = $pdo->prepare("DELETE FROM admin WHERE id_admin = :id_admin");
+    $stmt = $pdo->prepare("DELETE FROM admin WHERE TRIM(id_admin) = :id_admin");
     $stmt->bindParam(':id_admin', $idadmin, PDO::PARAM_STR);
     $stmt->execute();
+    if ($stmt->rowCount() === 0) {
+        sendmessage($from_id, "⚠️ ادمینی با این شناسه یافت نشد.", null, 'HTML');
+        return;
+    }
     sendmessage($from_id, "✅ ادمین با موفقیت حذف گردید", null, 'HTML');
 }
 // elseif (preg_match('/activeconfig-(\w+)/', $datain, $dataget)) {
