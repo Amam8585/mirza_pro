@@ -1,7 +1,8 @@
 <?php
 #----------------[  admin section  ]------------------#
 $textadmin = ["panel", "/panel", $textbotlang['Admin']['textpaneladmin']];
-$text_panel_admin_login_base64 = '8J+SjiB8IFZlcnNpb24gQm90OiA1LjEwLjc3CuKfkyB8IFZlcnNpb24gTWluaSBBcHA6IDAuMS4xCgo8YmxvY2txdW90ZT7wn5S5Jm5ic3A7fCYmbmJzcDvYqtmG2K/YtSDZiNix2KjYp9iqINqv2KfZhdmE2KfZiyA8YSBocmVmPSJodHRwczovL2dpdGh1Yi5jb20vbWFoZGlNR0YyIj7ZhduM2LHYstinPC9hPiDZiNin2LPYqiDYp9mE2KfYr9mHINix2KfZhCDigJMgPGEgaHJlZj0iaHR0cHM6Ly90Lm1lL0x1bWVUZWFtIj5MdW1lPC9hPiDaqdin2KfYsdmI2Kcg2KrYp9mG2YbYqtmFINmI2KfYsdipINin2YTYp9mG2K/YtyDZh9mE2KfZgi48L2Jsb2NrcXVvdGU+CjxibG9ja3F1b3RlPuKfkuImbmJzcDt8Jm5ic3A7INiv2LEg2LXZiNix2Kog2YXYtNin2YfYr9mH2ZUg2YfYsdmK2Kkg2K/YsduM2K8g2YHYsdmI2LQg2YjYrNmH2I48L2Jsb2NrcXVvdGU+CjxibG9ja3F1b3RlPuKfkuImbmJzcDt8Jm5ic3A7INiv2LEg2YfYpyDZh9uM2K/Yp9mGINmG2YfYqNmK2YbbjNin2Kog2KjYp9io2Kog2KfYs9iqINmI2K8g2KjYp9io2Kog2K/YsSDYr9in2K/Yp9mFINmH2Ycg2KfZhtmF2KfZgi48L2Jsb2NrcXVvdGU+Cgo8YmxvY2txdW90ZT7wn5CeJm5ic3A7fCYmbmJzcDsg2Kfar9ixINiv2LEg2LnZhNmE2qnYsdivINix2KjYp9iqINio2Kcg2KjYp9qvINuM2Kcg2YXYtNqp2YTbjCDZhdmI2KfYrNmHINi02K/bgNmK2K8g2KfYsiDYt9ix24zZgiDYr9qp2YXZh9mUINqv2LLYp9ix2LQg2LHYqNin2Kog2K/YsSDZvtmG2YQg2KfYr9mF24zZhi48L2Jsb2NrcXVvdGU+';
+$text_panel_admin_login_base64 = '8J+SjiB8IFZlcnNpb24gQm90OiAlcwrwn5OMIHwgVmVyc2lvbiBNaW5pIEFwcDogJXMKCjxibG9ja3F1b3RlPjxiPgrwn5S5IHwg2KfbjNmGINix2KjYp9iqINqp2KfZhdmE2KfZiyDYsdin24zar9in2YYg2KfYs9iqINmIINiq2YjYs9i3INiq2YjYs9i52YfigIzYr9mH2YbYr9mHCjxhIGhyZWY9Imh0dHBzOi8vZ2l0aHViLmNvbS9tYWhkaU1HRjIiIHJlbD0ibm9mb2xsb3ciIHRhcmdldD0iX2JsYW5rIj7ZhduM2LHYstinPC9hPiDYudix2LbZhyDYtNiv2Ycg2YgKPGEgaHJlZj0iaHR0cHM6Ly90Lm1lL0x1bWVUZWFtIiByZWw9Im5vZm9sbG93IiB0YXJnZXQ9Il9ibGFuayI+THVtZTwvYT4g2KLZhiDYsdinINin2LHYqtmC2Kcg2K/Yp9iv2Ycg2KfYs9iqLgoK8J+UuSB8INmH2LHar9mI2YbZhyDZgdix2YjYtCDbjNinINiv2LHbjNin2YHYqiDZiNis2Ycg2KjYp9io2Kog2KfbjNmGINix2KjYp9iqINiq2K7ZhNmBINmF2K3Ys9mI2Kgg2YXbjOKAjNi02YjYry4KCvCflLkgfCDYr9ixINi12YjYsdiqINmF2LTYp9mH2K/Zh9mUINmB2LHZiNi0INuM2Kcg2K/YsduM2KfZgdiqINmI2KzZh9iMINmE2LfZgdin2Ysg2YjYrNmHINiu2YjYryDYsdinINm+24zar9uM2LHbjCDaqdix2K/ZhyDZiCDYqNin2LLZvtiz4oCM2q/bjNix24wg2YbZhdin24zbjNivLgo8L2I+PC9ibG9ja3F1b3RlPgoKPGJsb2NrcXVvdGU+PGI+CvCfkJ4gfCDYp9qv2LEg2K/YsSDYudmF2YTaqdix2K8g2LHYqNin2Kog2KjYpyDYqNin2q8g24zYpyDZhdi02qnZhNuMINmF2YjYp9is2Ycg2LTYr9uM2K/YjCDYp9iyINi32LHbjNmCINiv2qnZhdmH2ZQg2q/Ystin2LHYtCDYsdio2KfYqiDYr9ixINm+2YbZhCDYp9iv2YXbjNmGINio2Kcg2YXYpyDYr9ixINin2LHYqtio2KfYtyDYqNin2LTbjNivLgo8L2I+PC9ibG9ja3F1b3RlPgo=';
+$text_panel_admin_login_template = base64_decode($text_panel_admin_login_base64, true) ?: '';
 if (!in_array($from_id, $admin_ids))
     return;
 if (in_array($text, $textadmin) || $datain == "admin") {
@@ -13,8 +14,7 @@ if (in_array($text, $textadmin) || $datain == "admin") {
     }
     $version_mini_app = file_get_contents('app/version');
     activecron();
-    $text_admin_template = base64_decode($text_panel_admin_login_base64);
-    $text_admin = sprintf($text_admin_template, $version, $version_mini_app);
+    $text_admin = sprintf($text_panel_admin_login_template, $version, $version_mini_app);
     $how_active_mini_app = "📌 آموزش فعالسازی مینی اپ در ربات BotFather
 
 /mybots > Select Bot > Bot Setting >  Configure Mini App > Enable Mini App  > Edit Mini App URL
@@ -31,8 +31,7 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         return;
     }
     $version_mini_app = file_get_contents('app/version');
-    $text_admin_template = base64_decode($text_panel_admin_login_base64);
-    $text_admin = sprintf($text_admin_template, $version, $version_mini_app);
+    $text_admin = sprintf($text_panel_admin_login_template, $version, $version_mini_app);
     sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
     step('home', $from_id);
     return;
