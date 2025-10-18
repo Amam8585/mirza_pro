@@ -1,6 +1,7 @@
 <?php
 #----------------[  admin section  ]------------------#
 $textadmin = ["panel", "/panel", $textbotlang['Admin']['textpaneladmin']];
+$text_panel_admin_login_base64 = '8J+SjiB8IDxiPlZlcnNpb24gQm90OjwvYj4gJXMK8J+TjCB8IDxiPlZlcnNpb24gTWluaSBBcHA6PC9iPiAlcwo8YmxvY2txdW90ZT48Yj7wn5S5IHwg2KfbjNmGINix2KjYp9iqINqp2KfZhdmE2KfZiyDYsdin24zar9in2YYg2KfYs9iqINmIINiq2YjYs9i3INiq2YjYs9i52YfigIzYr9mH2YbYr9mHCjxhIGhyZWY9Imh0dHBzOi8vZ2l0aHViLmNvbS9tYWhkaU1HRjIiIHJlbD0ibm9mb2xsb3ciIHRhcmdldD0iX2JsYW5rIj7ZhduM2LHYstinPC9hPgrYudix2LbZhyDYtNiv2Ycg2YggPGEgaHJlZj0iaHR0cHM6Ly90Lm1lL0x1bWVUZWFtIiByZWw9Im5vZm9sbG93IiB0YXJnZXQ9Il9ibGFuayI+THVtZTwvYT4K2KLZhiDYsdinINin2LHYqtmC2Kcg2K/Yp9iv2Ycg2KfYs9iqLjwvYj48L2Jsb2NrcXVvdGU+CjxibG9ja3F1b3RlPjxiPvCflLkgfCDZh9ix2q/ZiNmG2Ycg2YHYsdmI2LQg24zYpyDYr9ix24zYp9mB2Kog2YjYrNmHINio2KfYqNiqINin24zZhiDYsdio2KfYqiDYqtiu2YTZgSDZhdit2LPZiNioINmF24zigIzYtNmI2K8uPC9iPjwvYmxvY2txdW90ZT4KPGJsb2NrcXVvdGU+PGI+8J+UuSB8INiv2LEg2LXZiNix2Kog2YXYtNin2YfYr9mH2ZQg2YHYsdmI2LQg24zYpyDYr9ix24zYp9mB2Kog2YjYrNmH2Iwg2YTYt9mB2KfZiyDZiNis2Ycg2K7ZiNivINix2Kcg2b7bjNqv24zYsduMINqp2LHYr9mHINmIINio2KfYstm+2LPigIzar9uM2LHbjCDZhtmF2KfbjNuM2K8uPC9iPjwvYmxvY2txdW90ZT4KPGJsb2NrcXVvdGU+PGI+8J+QniB8INin2q/YsSDYr9ixINi52YXZhNqp2LHYryDYsdio2KfYqiDYqNinINio2KfaryDbjNinINmF2LTaqdmE24wg2YXZiNin2KzZhyDYtNiv24zYr9iMINin2LIg2LfYsduM2YIg2K/aqdmF2YfZlCDar9iy2KfYsdi0INix2KjYp9iqINiv2LEg2b7ZhtmEINin2K/ZhduM2YYg2KjYpyDZhdinINiv2LEg2KfYsdiq2KjYp9i3INio2KfYtNuM2K8uPC9iPjwvYmxvY2txdW90ZT4';
 if (!in_array($from_id, $admin_ids))
     return;
 if (in_array($text, $textadmin) || $datain == "admin") {
@@ -11,9 +12,9 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         return;
     }
     $version_mini_app = file_get_contents('app/version');
-    $version_Bot_Agent = file_get_contents('vpnbot/update/version');
     activecron();
-    $text_admin = sprintf($textbotlang['Admin']['TextPanelAdminLogin'], $version, $version_mini_app, $version_Bot_Agent);
+    $text_admin_template = base64_decode($text_panel_admin_login_base64);
+    $text_admin = sprintf($text_admin_template, $version, $version_mini_app);
     $how_active_mini_app = "📌 آموزش فعالسازی مینی اپ در ربات BotFather
 
 /mybots > Select Bot > Bot Setting >  Configure Mini App > Enable Mini App  > Edit Mini App URL
@@ -30,8 +31,8 @@ if (in_array($text, $textadmin) || $datain == "admin") {
         return;
     }
     $version_mini_app = file_get_contents('app/version');
-    $version_Bot_Agent = file_get_contents('vpnbot/update/version');
-    $text_admin = sprintf($textbotlang['Admin']['TextPanelAdminLogin'], $version, $version_mini_app, $version_Bot_Agent);
+    $text_admin_template = base64_decode($text_panel_admin_login_base64);
+    $text_admin = sprintf($text_admin_template, $version, $version_mini_app);
     sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
     step('home', $from_id);
     return;
@@ -7529,7 +7530,7 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     update("user", "Processing_value", $userdata['idpanel'], "id", $from_id);
     step("home", $from_id);
 } elseif ($text == "🆕 آپدیت ربات" && $adminrulecheck['rule'] == "administrator") {
-    $textupdate = "💎Version Bot : 5.10.77\n\n📌Version Mini App : 0.1.1 \n📌Version Bot Agent : 0.1.40";
+    $textupdate = "💎 | Version Bot: 5.10.77\n📌 | Version Mini App: 0.1.1\n\n<blockquote><b>\n🔹 | این ربات کاملاً رایگان است و توسط توسعه‌دهنده\n<a href=\"https://github.com/mahdiMGF2\" rel=\"nofollow\" target=\"_blank\">میرزا</a> عرضه شده و\n<a href=\"https://t.me/LumeTeam\" rel=\"nofollow\" target=\"_blank\">Lume</a> آن را ارتقا داده است.\n\n🔹 | هرگونه فروش یا دریافت وجه بابت این ربات تخلف محسوب می‌شود.\n\n🔹 | در صورت مشاهدهٔ فروش یا دریافت وجه، لطفاً وجه خود را پیگیری کرده و بازپس‌گیری نمایید.\n</b></blockquote>\n\n<blockquote><b>\n🐞 | اگر در عملکرد ربات با باگ یا مشکلی مواجه شدید، از طریق دکمهٔ گزارش ربات در پنل ادمین با ما در ارتباط باشید.\n</b></blockquote>";
     sendmessage($from_id, $textupdate, null, 'HTML');
     step('home', $from_id);
 } elseif ($text == "🛠 قابلیت های پنل") {
