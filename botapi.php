@@ -1,29 +1,65 @@
 <?php
 require_once 'config.php';
-function telegram($method, $datas = [],$token = null)
+function telegram($method, $datas = [], $token = null)
 {
     global $APIKEY;
-    $token = $token == null ? $APIKEY : $token;
+
+    $token = $token === null ? $APIKEY : $token;
     $url = "https://api.telegram.org/bot" . $token . "/" . $method;
+
     if (isset($datas['message_thread_id']) && intval($datas['message_thread_id']) <= 0) {
         unset($datas['message_thread_id']);
     }
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
+
+    $ch = curl_init($url);
+    if ($ch === false) {
+        error_log('Unable to initialise cURL for Telegram request.');
+        return [
+            'ok' => false,
+            'description' => 'Unable to initialise cURL for Telegram request.'
+        ];
+    }
+
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10); 
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); 
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $datas);
-    $res = curl_exec($ch);
-    $res = json_decode($res,true);
-    if(!$res['ok']){
-        if(json_encode($res) != null)error_log(json_encode($res));
+
+    $rawResponse = curl_exec($ch);
+    if ($rawResponse === false) {
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError !== '') {
+            error_log('Telegram request failed: ' . $curlError);
+        }
+
+        return [
+            'ok' => false,
+            'description' => $curlError !== '' ? $curlError : 'Telegram request failed.'
+        ];
     }
-    if (curl_error($ch)) {
-        return curl_error($ch);
-    } else {
-        return $res;
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $decodedResponse = json_decode($rawResponse, true);
+    if (!is_array($decodedResponse)) {
+        $logSnippet = substr($rawResponse, 0, 200);
+        error_log(sprintf('Invalid response from Telegram API (HTTP %d): %s', $httpCode, $logSnippet));
+
+        return [
+            'ok' => false,
+            'error_code' => $httpCode,
+            'description' => 'Invalid response received from Telegram.'
+        ];
     }
+
+    if (isset($decodedResponse['ok']) && !$decodedResponse['ok']) {
+        error_log(json_encode($decodedResponse));
+    }
+
+    return $decodedResponse;
 }
 function sendmessage($chat_id,$text,$keyboard,$parse_mode,$bot_token = null){
     if(intval($chat_id) == 0)return ['ok' => false];
