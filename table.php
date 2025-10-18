@@ -39,6 +39,7 @@ try {
             cardpayment VARCHAR(100) NOT NULL,
             codeInvitation VARCHAR(100) NULL,
             pricediscount VARCHAR(100) NULL   DEFAULT '0',
+            hide_mini_app_instruction VARCHAR(20) NULL   DEFAULT '0',
             maxbuyagent VARCHAR(100) NULL   DEFAULT '0',
             joinchannel VARCHAR(100) NULL   DEFAULT '0',
             checkstatus VARCHAR(50) NULL   DEFAULT '0',
@@ -77,6 +78,7 @@ try {
         addFieldToTable($tableName, 'pagenumber', '');
         addFieldToTable($tableName, 'codeInvitation', null);
         addFieldToTable($tableName, 'pricediscount', "0");
+        addFieldToTable($tableName, 'hide_mini_app_instruction', '0', "VARCHAR(20)");
     }
 } catch (PDOException $e) {
     file_put_contents('error_log user', $e->getMessage());

@@ -5,6 +5,9 @@ $text_panel_admin_login_base64 = '8J+SjiB8IFZlcnNpb24gQm90OiAlcwrwn5OMIHwgVmVyc2
 $text_panel_admin_login_template = base64_decode($text_panel_admin_login_base64, true) ?: '';
 if (!in_array($from_id, $admin_ids))
     return;
+
+$miniAppInstructionText = "📌 آموزش فعالسازی مینی اپ در ربات BotFather\n\n/mybots > Select Bot > Bot Setting >  Configure Mini App > Enable Mini App  > Edit Mini App URL\n\nمراحل بالا را طی کنید سپس آدرس زیر را ارسال نمایید :\n\n<code>https://$domainhosts/app/</code>";
+
 if (in_array($text, $textadmin) || $datain == "admin") {
     if ($datain == "admin")
         deletemessage($from_id, $message_id);
@@ -15,16 +18,18 @@ if (in_array($text, $textadmin) || $datain == "admin") {
     $version_mini_app = file_get_contents('app/version');
     activecron();
     $text_admin = sprintf($text_panel_admin_login_template, $version, $version_mini_app);
-    $how_active_mini_app = "📌 آموزش فعالسازی مینی اپ در ربات BotFather
-
-/mybots > Select Bot > Bot Setting >  Configure Mini App > Enable Mini App  > Edit Mini App URL
-
-مراحل بالا را طی کنید سپس آدرس زیر را ارسال نمایید :
-
-<code>https://$domainhosts/app/</code>";
-
     sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
-    sendmessage($from_id, $how_active_mini_app, null, 'HTML');
+    $miniAppInstructionHidden = isset($user['hide_mini_app_instruction']) ? (string) $user['hide_mini_app_instruction'] : '0';
+    if ($miniAppInstructionHidden !== '1') {
+        $miniAppInstructionKeyboard = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => 'دیگر نمایش نده ⛓️‍💥', 'callback_data' => 'hide_mini_app_instruction'],
+                ],
+            ],
+        ]);
+        sendmessage($from_id, $miniAppInstructionText, $miniAppInstructionKeyboard, 'HTML');
+    }
 } elseif ($text == $textbotlang['Admin']['backadmin']) {
     if ($buyreport == "0" || $otherservice == "0" || $otherreport == "0" || $paymentreports == "0" || $reporttest == "0" || $errorreport == "0") {
         sendmessage($from_id, $textbotlang['Admin']['activebottext'], $active_panell, 'HTML');
@@ -34,6 +39,17 @@ if (in_array($text, $textadmin) || $datain == "admin") {
     $text_admin = sprintf($text_panel_admin_login_template, $version, $version_mini_app);
     sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
     step('home', $from_id);
+    return;
+} elseif ($datain == "hide_mini_app_instruction") {
+    if (!in_array($from_id, $admin_ids))
+        return;
+    if (($user['hide_mini_app_instruction'] ?? '0') !== '1') {
+        update("user", "hide_mini_app_instruction", "1", "id", $from_id);
+        $user['hide_mini_app_instruction'] = '1';
+    }
+    $confirmationKeyboard = json_encode(['inline_keyboard' => []]);
+    $confirmationText = $miniAppInstructionText . "\n\n✅ این پیام دیگر برای شما نمایش داده نخواهد شد.";
+    Editmessagetext($from_id, $message_id, $confirmationText, $confirmationKeyboard, 'HTML');
     return;
 } elseif ($text == $textbotlang['Admin']['backmenu']) {
     if ($buyreport == "0" || $otherservice == "0" || $otherreport == "0" || $paymentreports == "0" || $reporttest == "0" || $errorreport == "0") {
