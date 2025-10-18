@@ -272,11 +272,76 @@ function step($step, $from_id)
     $stmt->execute([$step, $from_id]);
     clearSelectCache('user');
 }
+function determineColumnTypeFromValue($value)
+{
+    if (is_bool($value)) {
+        return 'TINYINT(1)';
+    }
+
+    if (is_int($value)) {
+        return 'INT(11)';
+    }
+
+    if (is_float($value)) {
+        return 'DOUBLE';
+    }
+
+    if ($value === null) {
+        return 'VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+    }
+
+    if (is_string($value)) {
+        if (function_exists('mb_strlen')) {
+            $length = mb_strlen($value, 'UTF-8');
+        } else {
+            $length = strlen($value);
+        }
+
+        if ($length <= 191) {
+            return 'VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+        }
+
+        if ($length <= 500) {
+            return 'VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+        }
+
+        return 'TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+    }
+
+    return 'TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
+}
+function ensureColumnExistsForUpdate($tableName, $fieldName, $valueSample = null)
+{
+    global $pdo;
+
+    try {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?');
+        $stmt->execute([$tableName, $fieldName]);
+        if ((int) $stmt->fetchColumn() > 0) {
+            return;
+        }
+
+        $datatype = determineColumnTypeFromValue($valueSample);
+
+        $defaultValue = null;
+        if (is_bool($valueSample)) {
+            $defaultValue = $valueSample ? '1' : '0';
+        } elseif (is_scalar($valueSample) && $valueSample !== null) {
+            $defaultValue = (string) $valueSample;
+        }
+
+        addFieldToTable($tableName, $fieldName, $defaultValue, $datatype);
+    } catch (PDOException $e) {
+        error_log('Failed to ensure column exists: ' . $e->getMessage());
+    }
+}
 function update($table, $field, $newValue, $whereField = null, $whereValue = null)
 {
     global $pdo, $user;
 
     $valueToStore = normaliseUpdateValue($newValue);
+
+    ensureColumnExistsForUpdate($table, $field, $valueToStore);
 
     $executeUpdate = function ($value) use ($pdo, $table, $field, $whereField, $whereValue) {
         if ($whereField !== null) {
