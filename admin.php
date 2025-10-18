@@ -1,7 +1,23 @@
 <?php
 #----------------[  admin section  ]------------------#
 $textadmin = ["panel", "/panel", $textbotlang['Admin']['textpaneladmin']];
-$text_panel_admin_login_base64 = '8J+SjiB8IFZlcnNpb24gQm90OiA1LjEwLjc3ICAK8J+TjCB8IFZlcnNpb24gTWluaSBBcHA6IDAuMS4xCjxibG9ja3F1b3RlPuKcmCB8INio2KfYqiBpbmEgcmVib3Qg2KfYsNmF2YbYp9i5INqp2KfZhdmE2KfZiyDZhdmG2YfYqSDYp9mG2YrYsdmK2KkgPGEgaHJlZj0iaHR0cHM6Ly9naXRodWIuY29tL21haGRpTUdGMiI+2KPYudiv2YfbjDwvYT4g2YjYp9mGIHZhIDxhIGhyZWY9Imh0dHBzOi8vdC5tZS9MdW1lVGVhbSI+bW1kJmFtcDthbWlyPC9hPiDYsdin2YTZh9ix2KfZhyDYp9mE2K/YqtmH2KjYp9mG2Kcg2KfbjNmGINix2KjYp9iqINqv2YfYqNmE2KfZhtio2LHYp9mKLi48L2Jsb2NrcXVvdGU+Cgo8YmxvY2txdW90ZT7inJggfCDYsdmD2YTYp9mE2KzZhyDZh9ix2q/ZiNmG2Ycg2YfYp9mE2LHYqiDYp9mE2Kog2YTZhduM2K8g2LHYqNin2Kog2KrZhtin2YYg2Ycg2YXYsdmE2LPYpyDYsdin2Kog2YXYsdix24zYry48L2Jsb2NrcXVvdGU+Cgo8YmxvY2txdW90ZT7inJggfCDZvtmG2KfYqiDYp9mE2KfYsdmK2Kcg2YjYrNin2KfYqiDYqtmG2KfZhiDZhyDZhdix2YTYs9inINix2KfYqiDZhdix2LHbjNivLjwvYmxvY2txdW90ZT4KCjxibG9ja3F1b3RlPuKck+KAjCB8INiv2KfYqSDYp9mE2LHYqtmE2YHZhtin2YYg2KfZhNiq2YrYp9mG2Ycg2KrYq9in2Kog2KrYhti02YbYqiDYp9mE2YXZh9mH2K8g2YHYsdmI2LTYp9ix2KrYqNix2KfYqiAuLi48L2Jsb2NrcXVvdGU+';
+$text_panel_admin_login_base64_parts = [
+    '8J+SjiB8IFZlcnNpb24gQm90OiA1LjEwLjc3ICAK8J+TjCB8IFZlcnNpb24gTWluaSBBcHA6IDAuMS4x',
+    'CjxibG9ja3F1b3RlPvCflLkgfCDYp9uM2YYg2LHYqNin2Kog2qnYp9mF2YTYp9mLINix2KfbjNqv2KfZ',
+    'hiDYp9iz2Kog2Ygg2KrZiNiz2Lcg2KrZiNiz2LnZh+KAjNiv2YfZhtiv2Ycg2YXbjNix2LLYpyDYudix',
+    '2LbZhyDYtNiv2Ycg2YggbW1kOGFtaXIg2K/bjNio2KfaryDYtNiv2Ycg2KfYs9iqLjwvYmxvY2txdW90',
+    'ZT4KCjxibG9ja3F1b3RlPvCflLkgfCDZh9ix2q/ZiNmG2Ycg2YHYsdmI2LQg24zYpyDYr9ix24zYp9mB',
+    '2Kog2YjYrNmHINio2KfYqNiqINin24zZhiDYsdio2KfYqiDYqtiu2YTZgSDZhdit2LPZiNioINmF24zi',
+    'gIzYtNmI2K8uPC9ibG9ja3F1b3RlPgoKPGJsb2NrcXVvdGU+8J+UuSB8INiv2LEg2LXZiNix2Kog2YXY',
+    'tNin2YfYr9mH2ZQg2YHYsdmI2LQg24zYpyDYr9ix24zYp9mB2Kog2YjYrNmH2Iwg2YTYt9mB2KfZiyDZ',
+    'iNis2Ycg2K7ZiNivINix2Kcg2b7bjNqv24zYsduMINqp2LHYr9mHINmIINio2KfYstm+2LPigIzar9uM',
+    '2LHbjCDZhtmF2KfbjNuM2K8uPC9ibG9ja3F1b3RlPgoKPGJsb2NrcXVvdGU+8J+QniB8INin2q/YsSDY',
+    'r9ixINi52YXZhNqp2LHYryDYsdio2KfYqiDYqNinINio2KfaryDbjNinINmF2LTaqdmE24wg2YXZiNin',
+    '2KzZhyDYtNiv24zYr9iMINin2LIg2LfYsduM2YIg2K/aqdmF2YfZlCA8Yj7wn5OsINqv2LLYp9ix2LQg',
+    '2LHYqNin2Ko8L2I+INiv2LEg2b7ZhtmEINin2K/ZhduM2YYg2KjYpyDZhdinINiv2LEg2KfYsdiq2KjY',
+    'p9i3INio2KfYtNuM2K8uPC9ibG9ja3F1b3RlPg==',
+];
+$text_panel_admin_login_base64 = implode('', $text_panel_admin_login_base64_parts);
 $text_panel_admin_login_template = base64_decode($text_panel_admin_login_base64, true) ?: '';
 if (!in_array($from_id, $admin_ids))
     return;
